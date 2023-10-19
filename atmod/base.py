@@ -1,5 +1,7 @@
+import rasterio
 import numpy as np
 import xarray as xr
+from typing import Union
 from abc import ABC, abstractmethod
 
 
@@ -94,6 +96,14 @@ class Raster(Spatial):
     def bounds(self):
         return self.xmin, self.ymin, self.xmax, self.ymax
 
+    @property
+    def x_ascending(self):
+        return self.xmax > self.xmin
+
+    @property
+    def y_ascending(self):
+        return self.ymax > self.ymin
+
     def get_affine(self) -> tuple:
         """
         Get an affine matrix based on the 2D extent of the data.
@@ -101,6 +111,9 @@ class Raster(Spatial):
         """
         x_rotation, y_rotation = 0.0, 0.0
         return self.ncols, x_rotation, self.xmin, y_rotation, -self.nrows, self.ymax
+
+    def to_tiff(self, outputpath):
+        pass
 
 
 class VoxelModel(Raster):
@@ -138,6 +151,28 @@ class VoxelModel(Raster):
         sel = self.ds.sel(y=other_y, x=other_x, z=other_z, method='nearest')
         sel = sel.assign_coords({'y': other_y, 'x': other_x, 'z': other_z})
         return self.__class__(sel, other.cellsize, other.dz)
+
+    def zslice_to_tiff(self, layer: str, z: Union[int, float], outputpath):
+        zslice = self.ds[layer].sel(z=z)
+
+        if not self.x_ascending:
+            zslice = zslice.isel(x=slice(None, None, -1))
+        if self.y_ascending:
+            zslice = zslice.isel(y=slice(None, None, -1))
+
+        affine = self.get_affine()
+        meta = {
+            'driver': 'GTiff',
+            'dtype': 'float32',
+            'width': self.ncols,
+            'height': self.nrows,
+            'crs': 'epsg:28992',
+            'nodata': np.nan,
+            'transform': affine,
+            'count': 1
+        }
+        with rasterio.open(outputpath, 'w', **meta) as dst:
+            dst.write(zslice.values, 1)
 
 
 class Mapping(Spatial):
