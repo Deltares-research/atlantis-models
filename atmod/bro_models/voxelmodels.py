@@ -35,7 +35,11 @@ class GeoTop(VoxelModel):
         GeoTop
             GeoTop instance of the netcdf file.
         """
+        cellsize = 100
+        dz = 0.5
+
         ds = xr.open_dataset(nc_path, **xr_kwargs)
+        ds = cls.coordinates_as_cellcenters(ds, cellsize)
 
         if bbox is not None:
             xmin, ymin, xmax, ymax = bbox
@@ -45,7 +49,13 @@ class GeoTop(VoxelModel):
             ds = ds[data_vars]
 
         ds = _follow_gdal_conventions(ds)
-        return cls(ds, 100, 0.5)
+        return cls(ds, cellsize, dz)
+
+    @staticmethod
+    def coordinates_as_cellcenters(ds, cellsize):
+        ds['x'] = ds['x'] + (cellsize/2)
+        ds['y'] = ds['y'] + (cellsize/2)
+        return ds
 
     @classmethod
     def from_opendap(cls, url, bbox: tuple, data_vars: ArrayLike = None):
@@ -66,11 +76,15 @@ class GeoTop(VoxelModel):
         xr.DataSet
             GeoTop subsurface model for the requested area.
         """
+        cellsize = 100
+        dz = 0.5
+
         xmin, ymin, xmax, ymax = bbox
         ds = xr.open_dataset(url, chunks={'y': 200, 'x': 200})
+        ds = cls.coordinates_as_cellcenters(ds, cellsize)
         ds = ds.sel(x=slice(xmin, xmax), y=slice(ymin, ymax))
         ds = _follow_gdal_conventions(ds)
-        return cls(ds, 100, 0.5)
+        return cls(ds, cellsize, dz)
 
     @property
     def isvalid(self):
