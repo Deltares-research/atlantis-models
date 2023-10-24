@@ -1,7 +1,9 @@
 import numba
 import numpy as np
 import xarray as xr
-from atmod.base import VoxelModel
+from typing import Union
+from atmod.base import Raster, VoxelModel
+from atmod.bro_models.geology import Lithology
 
 
 def combine_data_sources(
@@ -9,10 +11,28 @@ def combine_data_sources(
         geotop,
         nl3d,
         soilmap,
+        soilmap_dicts
         ):
     voxelmodel = combine_geotop_nl3d(geotop, nl3d)
+    highest_voxel = np.max(voxelmodel.mask_surface_level())
+    voxelmodel.ds = voxelmodel.ds.isel(z=slice(None, highest_voxel+5))
+
+    thickness = get_full_like(voxelmodel, 0.5, np.nan)
+    mass_organic = get_full_like(voxelmodel, 0.0)
+    mass_organic[voxelmodel['lithok'].values==Lithology.organic] = 50.0
 
     return voxelmodel
+
+
+def get_full_like(
+        model: Union[Raster, VoxelModel],
+        fill_value: float,
+        invalid_value: float = None,
+        dtype='float32'
+        ):
+    result = np.full(model.shape, fill_value, dtype=dtype)
+    result[~model.isvalid] = invalid_value
+    return result
 
 
 def combine_geotop_nl3d(geotop: VoxelModel, nl3d: VoxelModel) -> VoxelModel:
@@ -34,14 +54,15 @@ def combine_geotop_nl3d(geotop: VoxelModel, nl3d: VoxelModel) -> VoxelModel:
     """
     nl3d = nl3d.select_like(geotop)
 
-    if np.all(geotop.isvalid):
+    if np.all(geotop.isvalid_area):
         combined = geotop.ds
     else:
-        combined = xr.where(geotop.isvalid, geotop.ds, nl3d.ds)
+        combined = xr.where(geotop.isvalid_area, geotop.ds, nl3d.ds)
 
     return VoxelModel(combined, geotop.cellsize, geotop.dz)
 
 
+@numba.njit
 def combine_voxels_and_soilmap(ahn, lithology, soilmap):
     ysize, xsize = ahn.shape
     invalid_ahn = np.isnan(ahn) or ahn > 95
