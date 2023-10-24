@@ -39,7 +39,7 @@ class GeoTop(VoxelModel):
         dz = 0.5
 
         ds = xr.open_dataset(nc_path, **xr_kwargs)
-        ds = cls.coordinates_as_cellcenters(ds, cellsize)
+        ds = cls.coordinates_to_cellcenters(ds, cellsize)
 
         if bbox is not None:
             xmin, ymin, xmax, ymax = bbox
@@ -52,7 +52,7 @@ class GeoTop(VoxelModel):
         return cls(ds, cellsize, dz)
 
     @staticmethod
-    def coordinates_as_cellcenters(ds, cellsize):
+    def coordinates_to_cellcenters(ds, cellsize):
         ds['x'] = ds['x'] + (cellsize/2)
         ds['y'] = ds['y'] + (cellsize/2)
         return ds
@@ -81,30 +81,10 @@ class GeoTop(VoxelModel):
 
         xmin, ymin, xmax, ymax = bbox
         ds = xr.open_dataset(url, chunks={'y': 200, 'x': 200})
-        ds = cls.coordinates_as_cellcenters(ds, cellsize)
+        ds = cls.coordinates_to_cellcenters(ds, cellsize)
         ds = ds.sel(x=slice(xmin, xmax), y=slice(ymin, ymax))
         ds = _follow_gdal_conventions(ds)
         return cls(ds, cellsize, dz)
-
-    @property
-    def isvalid(self):
-        """
-        2D DataArray where GeoTop contains valid voxels at y, x locations.
-        """
-        if not hasattr(self, '_isvalid'):
-            self.get_isvalid()
-        return self._isvalid
-
-    @property
-    def ismissing(self):
-        """
-        2D DataArray where GeoTop has no data at y, x locations.
-        """
-        return ~self.isvalid
-
-    def get_isvalid(self):
-        self._isvalid = np.any(~np.isnan(self.ds['strat']), axis=2)
-        return self._isvalid
 
 
 class Nl3d(VoxelModel):

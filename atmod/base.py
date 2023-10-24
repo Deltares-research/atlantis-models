@@ -143,6 +143,10 @@ class VoxelModel(Raster):
     def shape(self):
         return self.nrows, self.ncols, self.nz
 
+    @property
+    def data_vars(self):
+        return list(self.ds.data_vars.keys())
+
     def select_like(self, other):
         other_y = other.ycoords
         other_x = other.xcoords
@@ -173,6 +177,34 @@ class VoxelModel(Raster):
         }
         with rasterio.open(outputpath, 'w', **meta) as dst:
             dst.write(zslice.values, 1)
+
+    @property
+    def isvalid_area(self):
+        """
+        2D DataArray where GeoTop contains valid voxels at y, x locations.
+        """
+        if not hasattr(self, '_isvalid'):
+            self.get_isvalid_area()
+        return self._isvalid_area
+
+    @property
+    def ismissing_area(self):
+        """
+        2D DataArray where GeoTop has no data at y, x locations.
+        """
+        return ~self._isvalid_area
+
+    @property
+    def isvalid(self):
+        return ~np.isnan(self.ds[self.data_vars[0]])
+
+    def get_isvalid_area(self):
+        self._isvalid_area = np.any(self.isvalid, axis=2)
+        return self._isvalid_area
+
+    def mask_surface_level(self):
+        max_idx_valid = np.argmax(np.cumsum(self.isvalid.values, axis=2), axis=2)
+        return max_idx_valid
 
 
 class Mapping(Spatial):
