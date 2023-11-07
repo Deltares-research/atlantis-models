@@ -199,7 +199,7 @@ def get_numba_mapping_dicts_from(soilmap, ascending_depth=True):
         thickness[nr] = np.float32(__get_values(df['thickness'], ascending_depth))
         organic[nr] = np.float32(__get_values(df['orgmatter'], ascending_depth))
 
-    return NumbaDicts(layer, lithology, thickness, organic)
+    return NumbaDicts(layer, thickness, lithology, organic)
 
 
 if __name__ == "__main__":
