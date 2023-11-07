@@ -107,7 +107,7 @@ def combine_voxels_and_soilmap(
                         modelbase,
                     )
                 elif surface_level_voxels < surface:
-                    vt, vl, vo = _shift_voxel_surface_down(
+                    vt, vl, vo = _shift_voxel_surface_up(
                         voxel_thickness,
                         voxel_lithology,
                         voxel_organic,
