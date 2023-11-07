@@ -3,6 +3,7 @@ import xarray as xr
 from pathlib import WindowsPath
 from typing import Union, TypeVar
 from atmod.base import VoxelModel
+from atmod.utils import _follow_gdal_conventions
 
 ArrayLike = TypeVar('ArrayLike')
 
@@ -73,7 +74,7 @@ class GeoTop(VoxelModel):
 
         Returns
         -------
-        xr.DataSet
+        xr.Dataset
             GeoTop subsurface model for the requested area.
         """
         cellsize = 100
@@ -126,8 +127,3 @@ class Nl3d(VoxelModel):
 
         ds = _follow_gdal_conventions(ds)
         return cls(ds, 250, 1.0)
-
-
-def _follow_gdal_conventions(ds):
-    ds = ds.transpose('y', 'x', 'z')
-    return ds

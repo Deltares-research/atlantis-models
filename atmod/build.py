@@ -5,9 +5,12 @@ from typing import Union, TypeVar
 from atmod.base import Raster, VoxelModel, Mapping
 from atmod.merge import combine_data_sources
 from atmod.preprocessing import get_numba_mapping_dicts_from, soilmap_to_raster
+from atmod.read import read_ahn
 from atmod.utils import build_template
 
+
 BodemKaartDicts = TypeVar('BodemKaartDicts')
+
 
 def get_2d_template_like(model: Union[Raster, VoxelModel]) -> Raster:
     xmin_center = model.xmin + (0.5*model.cellsize)
@@ -64,7 +67,7 @@ if __name__ == "__main__":
 
     path_gpkg = r'c:\Users\knaake\OneDrive - Stichting Deltares\Documents\data\dino\bro_bodemkaart.gpkg'  # noqa: E501
 
-    ahn = 1
+    ahn = read_ahn(r'p:\430-tgg-data\ahn\dtm_100m.tif', bbox=bbox)
     geotop = GeoTop.from_netcdf(
         r'p:\430-tgg-data\Geotop\geotop2023\geotop.nc',
         bbox=bbox,
@@ -77,4 +80,4 @@ if __name__ == "__main__":
         )
     soilmap = BroBodemKaart.from_geopackage(path_gpkg, bbox=bbox)
 
-    model = build_atlantis_model(1, geotop, nl3d, soilmap)
+    model = build_atlantis_model(ahn, geotop, nl3d, soilmap)
