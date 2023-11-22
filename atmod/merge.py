@@ -4,7 +4,7 @@ import xarray as xr
 from typing import Union
 from atmod.base import Raster, VoxelModel
 from atmod.bro_models.geology import Lithology
-from atmod.utils import get_full_like
+from atmod.templates import get_full_like
 
 
 def combine_data_sources(ahn, geotop, nl3d, soilmap, soilmap_dicts):

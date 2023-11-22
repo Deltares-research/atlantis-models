@@ -59,7 +59,8 @@ def rasterize_like(
 
 
 if __name__ == "__main__":
-    from atmod.utils import build_template
+    # TODO: Move code below to tests
+    from atmod.templates import build_template
     from atmod.bro_models import BroBodemKaart
 
     path_gpkg = r'c:\Users\knaake\OneDrive - Stichting Deltares\Documents\data\dino\bro_bodemkaart.gpkg'  # noqa: E501

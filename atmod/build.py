@@ -5,32 +5,33 @@ from typing import Union, TypeVar
 from atmod.base import Raster, VoxelModel, Mapping
 from atmod.merge import combine_data_sources
 from atmod.preprocessing import get_numba_mapping_dicts_from, soilmap_to_raster
-from atmod.read import read_ahn
-from atmod.utils import build_template
+from atmod.read import read_ahn, read_glg
+from atmod.templates import build_template
 
 
 BodemKaartDicts = TypeVar('BodemKaartDicts')
 
 
 def get_2d_template_like(model: Union[Raster, VoxelModel]) -> Raster:
-    xmin_center = model.xmin + (0.5*model.cellsize)
-    ymin_center = model.ymin + (0.5*model.cellsize)
+    xmin_center = model.xmin + (0.5 * model.cellsize)
+    ymin_center = model.ymin + (0.5 * model.cellsize)
 
     return build_template(
-        model.ncols,
-        model.nrows,
-        xmin_center,
-        ymin_center,
-        model.cellsize
+        model.ncols, model.nrows, xmin_center, ymin_center, model.cellsize
     )
 
 
+def add_atlantis_variables(voxelmodel):
+    return voxelmodel
+
+
 def build_atlantis_model(
-        ahn: Raster,
-        geotop: VoxelModel,
-        nl3d: VoxelModel,
-        bodemkaart: Mapping,
-        ):
+    ahn: Raster,
+    glg: Raster,
+    geotop: VoxelModel,
+    nl3d: VoxelModel,
+    bodemkaart: Mapping,
+):
     """
     Workflow to create a 3D subsurface model as input for Atlantis subsurface
     modelling.
@@ -38,6 +39,8 @@ def build_atlantis_model(
     Parameters
     ----------
     ahn : Raster
+        _description_
+    glg : Raster
         _description_
     geotop : VoxelModel
         _description_
@@ -56,8 +59,9 @@ def build_atlantis_model(
     soilmap_dicts = get_numba_mapping_dicts_from(bodemkaart)
     soilmap = soilmap_to_raster(bodemkaart, template_2d)
 
-    combine_data_sources(ahn, geotop, nl3d, soilmap, soilmap_dicts)
-    return
+    voxelmodel = combine_data_sources(ahn, geotop, nl3d, soilmap, soilmap_dicts)
+    voxelmodel = add_atlantis_variables(voxelmodel)
+    return voxelmodel
 
 
 if __name__ == "__main__":
@@ -68,6 +72,10 @@ if __name__ == "__main__":
     path_gpkg = r'c:\Users\knaake\OneDrive - Stichting Deltares\Documents\data\dino\bro_bodemkaart.gpkg'  # noqa: E501
 
     ahn = read_ahn(r'p:\430-tgg-data\ahn\dtm_100m.tif', bbox=bbox)
+    glg = read_glg(
+        r'n:\Projects\11209000\11209259\B. Measurements and calculations\009 effectmodule bodemdaling\data\1-external\deltascenarios\S2050BP18\Modflow\GLG_19120101000000.asc',
+        bbox=bbox,
+    )
     geotop = GeoTop.from_netcdf(
         r'p:\430-tgg-data\Geotop\geotop2023\geotop.nc',
         bbox=bbox,
@@ -80,4 +88,4 @@ if __name__ == "__main__":
         )
     soilmap = BroBodemKaart.from_geopackage(path_gpkg, bbox=bbox)
 
-    model = build_atlantis_model(ahn, geotop, nl3d, soilmap)
+    model = build_atlantis_model(ahn, glg, geotop, nl3d, soilmap)

@@ -1,15 +1,14 @@
-import rioxarray as rio
 from atmod.base import Raster
-from atmod.utils import _follow_gdal_conventions
 
 
-def read_ahn(tif_path, cellsize: int = 100, bbox: tuple = None):
-    ds = rio.open_rasterio(tif_path)
-    ds = ds.sel(band=1)
-
-    if bbox is not None:
-        xmin, ymin, xmax, ymax = bbox
-        ds = ds.sel(x=slice(xmin, xmax), y=slice(ymax, ymin))
-
-    ahn = Raster(ds, cellsize)
+def read_ahn(ahn_path, bbox: tuple = None):
+    ahn = Raster.from_tif(ahn_path, bbox)
+    # TODO: add automatic resampling if cellsize of ahn is not 100x100 m
     return ahn
+
+
+def read_glg(glg_path, bbox: tuple = None):
+    glg = Raster.from_tif(glg_path, bbox)
+    glg.set_crs(28992)
+    glg.set_cellsize(100, inplace=True)
+    return glg
