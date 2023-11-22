@@ -16,10 +16,10 @@ def soilmap_to_raster(soilmap, da) -> Raster:
 
 
 def rasterize_like(
-        shapefile: Union[str, WindowsPath, gpd.GeoDataFrame],
-        attribute: str,
-        da: Union[Raster, VoxelModel],
-        ):
+    shapefile: Union[str, WindowsPath, gpd.GeoDataFrame],
+    attribute: str,
+    da: Union[Raster, VoxelModel],
+):
     """
     Rasterize a shapefile like an atmod Raster or into the 2D extent of a VoxelModel
     object.
@@ -52,7 +52,7 @@ def rasterize_like(
         shapes=shapes,
         fill=np.nan,
         out_shape=(da.nrows, da.ncols),
-        transform=da.get_affine()
+        transform=da.get_affine(),
     )
     rasterized = xr.DataArray(rasterized, coords=da.coords, dims=da.dims)
     return rasterized

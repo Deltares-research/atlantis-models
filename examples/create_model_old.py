@@ -285,7 +285,7 @@ def _MAIN(path_ondergrondmodel_in,
     model['mass_fraction_organic'].where(valid_yxz)
     model["geology"] = xr.full_like(model['lithology'], 1)
     model["geology"] = model["geology"].where((model["z"] > holocene_base), other = 2).where(valid_yxz, other=-1) 
-    rho_bulk = (100.0 / model["mass_fraction_organic"]) / (
+    rho_bulk = (100.0 / model["mass_fraction_organic"]) * (
         1.0 - np.exp(-model["mass_fraction_organic"] / 0.12)
     )
     keep = np.isfinite(rho_bulk)

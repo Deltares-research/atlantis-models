@@ -24,8 +24,8 @@ mv = 0.705
 
 thickness_gtp = np.full(15, 0.5)
 lith_gtp = np.random.randint(1, 4, 15)
-thickness_gtp[10:] = 0
-lith_gtp[10:] = -1
+# thickness_gtp[10:] = 0
+# lith_gtp[10:] = -1
 
 thickness_bodem = np.array([0.2, 0.3, 0.2, 0.5])
 lith_bodem = np.random.randint(1, 4, 4)
