@@ -1,9 +1,9 @@
 import numba
 import numpy as np
 import pandas as pd
-import warnings
 from dataclasses import dataclass
 from atmod.bro_models import BroBodemKaart, Lithology
+from atmod.warnings import IgnoreNumbaTypeSafetyWarning
 
 
 @dataclass(repr=False)
@@ -16,18 +16,6 @@ class NumbaDicts:
     def __repr__(self):
         keys = list(self.__dict__.keys())
         return f'NumbaDicts instance of typical soilprofiles:\n\tAttributes: {keys}'
-
-
-class IgnoreNumbaTypeSafetyWarning:
-    """
-    Context manager class to ignore Numba type safety warnings.
-    """
-    def __enter__(self):
-        warnings.filterwarnings("ignore", category=numba.NumbaTypeSafetyWarning)
-        return self
-
-    def __exit__(self, *args):
-        warnings.resetwarnings()
 
 
 def determine_geotop_lithology_from(soiltable: pd.DataFrame) -> np.array:
