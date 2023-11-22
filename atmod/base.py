@@ -9,12 +9,36 @@ from rasterio.crs import CRS
 from rasterio.enums import Resampling
 
 
+class AtlansParameters:
+    def __init__(
+        self,
+        modelbase: Union[int, float] = -30,
+        mass_fraction_organic: Union[int, float] = 0.5,
+        mass_fraction_lutum: Union[int, float] = 0.5,
+        rho_bulk: Union[int, float] = 833.0,
+        shrinkage_degree: Union[int, float] = 0.7,
+        max_oxidation_depth: Union[int, float] = 1.2,
+        no_oxidation_thickness: Union[int, float] = 0.3,
+        no_shrinkage_thickness: Union[int, float] = 0.0
+    ):
+        self.modelbase = float(modelbase)
+        self.mass_fraction_organic = float(mass_fraction_organic)
+        self.mass_fraction_lutum = float(mass_fraction_lutum)
+        self.rho_bulk = float(rho_bulk)
+        self.shrinkage_degree = float(shrinkage_degree)
+        self.max_oxidation_depth = float(max_oxidation_depth)
+        self.no_oxidation_thickness = float(no_oxidation_thickness)
+        self.no_shrinkage_thickness = float(no_shrinkage_thickness)
+
+    @classmethod
+    def from_inifile(cls):
+        raise NotImplementedError
+
+
 class Spatial(ABC):
     """
     Abstract base class for spatial objects.
-
     """
-
     @property
     @abstractmethod
     def bounds(self):
@@ -58,6 +82,12 @@ class Raster(Spatial):
 
         if crs is not None:
             self.ds.rio.write_crs(crs)
+
+    def __repr__(self):
+        instance = f'atmod.{self.__class__.__name__} instance'
+        dimensions = f'Dimensions: {dict(self.dims)}'
+        resolution = f'Resolution (y, x): {self.cellsize, self.cellsize}'
+        return f'{instance}\n{dimensions}\n{resolution}'
 
     @classmethod
     def from_tif(cls, tif_path, bbox=None):
@@ -140,6 +170,10 @@ class Raster(Spatial):
     def dtype(self):
         return self.ds.dtype
 
+    @property
+    def values(self):
+        return self.ds.values
+
     def get_affine(self) -> tuple:
         """
         Get an affine matrix based on the 2D extent of the data.
@@ -182,7 +216,7 @@ class VoxelModel(Raster):
         dz: Union[int, float],
         crs: Union[str, int, CRS] = None,
     ):
-        Raster.__init__(self, ds, cellsize)
+        Raster.__init__(self, ds, cellsize, crs)
         self.dz = dz
 
     def __repr__(self):

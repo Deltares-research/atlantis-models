@@ -7,7 +7,7 @@ from atmod.bro_models.geology import Lithology
 from atmod.templates import get_full_like
 
 
-def combine_data_sources(ahn, geotop, nl3d, soilmap, soilmap_dicts):
+def combine_data_sources(ahn, geotop, nl3d, soilmap, soilmap_dicts, parameters):
     voxelmodel = combine_geotop_nl3d(geotop, nl3d)
     # _mask_depth not as a class function because selection is too specific  # noqa: E501
     voxelmodel = _mask_depth(voxelmodel)
@@ -15,12 +15,10 @@ def combine_data_sources(ahn, geotop, nl3d, soilmap, soilmap_dicts):
     thickness = get_full_like(voxelmodel, 0.5, np.nan)
     lithoclass = voxelmodel['lithok'].values
     mass_organic = get_full_like(voxelmodel, 0.0)
-    mass_organic[lithoclass == Lithology.organic] = 50.0
-
-    ahn_values = ahn.ds.values
+    mass_organic[lithoclass == Lithology.organic] = parameters.mass_fraction_organic
 
     thickness, lithology, organic = combine_voxels_and_soilmap(
-        ahn_values,
+        ahn.values,
         thickness,
         lithoclass,
         mass_organic,
@@ -30,10 +28,11 @@ def combine_data_sources(ahn, geotop, nl3d, soilmap, soilmap_dicts):
         soilmap_dicts.organic,
         voxelmodel.zmin,
     )
+
     voxelmodel['lithology'] = (('y', 'x', 'z'), lithology)
     voxelmodel['thickness'] = (('y', 'x', 'z'), thickness)
-    voxelmodel['organic'] = (('y', 'x', 'z'), organic)
-    voxelmodel['surface'] = (('y', 'x'), ahn_values)
+    voxelmodel['mass_fraction_organic'] = (('y', 'x', 'z'), organic)
+    voxelmodel['surface'] = (ahn.dims, ahn.values)
 
     voxelmodel.drop_vars(['lithok'])
     return voxelmodel
@@ -60,6 +59,8 @@ def combine_geotop_nl3d(geotop: VoxelModel, nl3d: VoxelModel) -> VoxelModel:
 
     if np.all(geotop.isvalid_area):
         combined = geotop.ds
+    elif not np.any(geotop.isvalid_area):
+        combined = nl3d.ds
     else:
         combined = xr.where(geotop.isvalid_area, geotop.ds, nl3d.ds)
 

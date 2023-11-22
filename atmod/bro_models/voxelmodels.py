@@ -3,7 +3,7 @@ import xarray as xr
 from pathlib import WindowsPath
 from typing import Union, TypeVar
 from atmod.base import VoxelModel
-from atmod.utils import _follow_gdal_conventions
+from atmod.utils import _follow_gdal_conventions, get_crs_object
 
 ArrayLike = TypeVar('ArrayLike')
 
@@ -38,6 +38,7 @@ class GeoTop(VoxelModel):
         """
         cellsize = 100
         dz = 0.5
+        crs = 28992
 
         ds = xr.open_dataset(nc_path, **xr_kwargs)
         ds = cls.coordinates_to_cellcenters(ds, cellsize)
@@ -50,7 +51,7 @@ class GeoTop(VoxelModel):
             ds = ds[data_vars]
 
         ds = _follow_gdal_conventions(ds)
-        return cls(ds, cellsize, dz)
+        return cls(ds, cellsize, dz, crs)
 
     @staticmethod
     def coordinates_to_cellcenters(ds, cellsize):
@@ -79,13 +80,14 @@ class GeoTop(VoxelModel):
         """
         cellsize = 100
         dz = 0.5
+        crs = 28992
 
         xmin, ymin, xmax, ymax = bbox
         ds = xr.open_dataset(url, chunks={'y': 200, 'x': 200})
         ds = cls.coordinates_to_cellcenters(ds, cellsize)
         ds = ds.sel(x=slice(xmin, xmax), y=slice(ymin, ymax))
         ds = _follow_gdal_conventions(ds)
-        return cls(ds, cellsize, dz)
+        return cls(ds, cellsize, dz, crs)
 
 
 class Nl3d(VoxelModel):
@@ -117,6 +119,9 @@ class Nl3d(VoxelModel):
             Nl3d instance of the netcdf file.
         """
         ds = xr.open_dataset(nc_path, **xr_kwargs)
+        cellsize = 250
+        dz = 1.0
+        crs = 28992
 
         if bbox is not None:
             xmin, ymin, xmax, ymax = bbox
@@ -126,4 +131,4 @@ class Nl3d(VoxelModel):
             ds = ds[data_vars]
 
         ds = _follow_gdal_conventions(ds)
-        return cls(ds, 250, 1.0)
+        return cls(ds, cellsize, dz, crs)
