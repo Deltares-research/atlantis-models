@@ -3,7 +3,7 @@ import numpy as np
 import pandas as pd
 from dataclasses import dataclass
 from atmod.bro_models import BroBodemKaart, Lithology
-from atmod.warnings import IgnoreNumbaTypeSafetyWarning
+from atmod.warnings import suppress_warnings
 
 
 @dataclass(repr=False)
@@ -150,6 +150,7 @@ def __get_values(series, ascending_depth=True):
     return values
 
 
+@suppress_warnings(numba.NumbaTypeSafetyWarning)
 def get_numba_mapping_dicts_from(soilmap, ascending_depth=True):
     """
     Generate Numba compatible dictionaries from the BRO Bodemkaart of layer, thickness,
@@ -196,19 +197,18 @@ def get_numba_mapping_dicts_from(soilmap, ascending_depth=True):
     mapping_table['nr'] = mapping_table['nr'].str.split('.', expand=True)[2].astype(int)
 
     to_fraction = 100
-    with IgnoreNumbaTypeSafetyWarning():
-        for nr, df in mapping_table.groupby('nr'):
-            lith = __get_values(df['lithology'], ascending_depth)
-            thick = __get_values(df['thickness'], ascending_depth)
-            org = __get_values(df['orgmatter'] / to_fraction, ascending_depth)
-            lut = __get_values(df['lutum'] / to_fraction, ascending_depth)
+    for nr, df in mapping_table.groupby('nr'):
+        lith = __get_values(df['lithology'], ascending_depth)
+        thick = __get_values(df['thickness'], ascending_depth)
+        org = __get_values(df['orgmatter'] / to_fraction, ascending_depth)
+        lut = __get_values(df['lutum'] / to_fraction, ascending_depth)
 
-            lithology[nr] = np.float32(lith)
-            thickness[nr] = np.float32(thick)
-            organic[nr] = np.float32(org)
-            lutum[nr] = np.float32(lut)
+        lithology[nr] = np.float32(lith)
+        thickness[nr] = np.float32(thick)
+        organic[nr] = np.float32(org)
+        lutum[nr] = np.float32(lut)
 
-    return NumbaDicts(thickness, lithology, organic)
+    return NumbaDicts(thickness, lithology, organic, lutum)
 
 
 if __name__ == "__main__":

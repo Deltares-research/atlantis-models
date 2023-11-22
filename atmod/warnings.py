@@ -1,26 +1,27 @@
 import numba
 import warnings
+from functools import wraps
 
 
-class IgnoreNumbaTypeSafetyWarning:
-    """
-    Context manager class to ignore Numba type safety warnings.
-    """
+class WarningSuppressor:
+    def __init__(self, *warning_types):
+        self.warning_types = warning_types
+
     def __enter__(self):
-        warnings.filterwarnings("ignore", category=numba.NumbaTypeSafetyWarning)
-        return self
+        self._original_showwarning = warnings.showwarning
+        warnings.simplefilter("ignore", *self.warning_types)
 
-    def __exit__(self, *args):
-        warnings.resetwarnings()
+    def __exit__(self, exc_type, exc_value, traceback):
+        warnings.showwarning = self._original_showwarning
 
 
-class IgnoreRuntimeWarning:
-    """
-    Context manager class to ignore RuntimWarnings for e.g. zero division warnings.
-    """
-    def __enter__(self):
-        warnings.filterwarnings("ignore", category=RuntimeWarning)
-        return self
+def suppress_warnings(*warning_types):
+    def decorator(func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            with WarningSuppressor(*warning_types):
+                return func(*args, **kwargs)
 
-    def __exit__(self, *args):
-        warnings.resetwarnings()
+        return wrapper
+
+    return decorator
