@@ -1,9 +1,8 @@
 import numba
 import numpy as np
 import pandas as pd
+import warnings
 from dataclasses import dataclass
-from pathlib import WindowsPath
-from typing import Union
 from atmod.bro_models import BroBodemKaart, Lithology
 
 
@@ -12,10 +11,23 @@ class NumbaDicts:
     thickness: numba.typed.typeddict.Dict
     lithology: numba.typed.typeddict.Dict
     organic: numba.typed.typeddict.Dict
+    lutum: numba.typed.typeddict.Dict
 
     def __repr__(self):
         keys = list(self.__dict__.keys())
         return f'NumbaDicts instance of typical soilprofiles:\n\tAttributes: {keys}'
+
+
+class IgnoreNumbaTypeSafetyWarning:
+    """
+    Context manager class to ignore Numba type safety warnings.
+    """
+    def __enter__(self):
+        warnings.filterwarnings("ignore", category=numba.NumbaTypeSafetyWarning)
+        return self
+
+    def __exit__(self, *args):
+        warnings.resetwarnings()
 
 
 def determine_geotop_lithology_from(soiltable: pd.DataFrame) -> np.array:
@@ -131,6 +143,7 @@ def get_bodemkaart_mapping_table(soilmap) -> pd.DataFrame:
             thickness=thickness,
             lithology=lithology,
             orgmatter=typical_soilprofiles['organicmattercontent'],
+            lutum=typical_soilprofiles['lutitecontent'],
         )
     )
 
@@ -186,13 +199,26 @@ def get_numba_mapping_dicts_from(soilmap, ascending_depth=True):
         value_type=numba.types.float32[:],
     )
 
+    lutum = numba.typed.Dict.empty(
+        key_type=numba.types.int16,
+        value_type=numba.types.float32[:],
+    )
+
     mapping_table = get_bodemkaart_mapping_table(soilmap)
     mapping_table['nr'] = mapping_table['nr'].str.split('.', expand=True)[2].astype(int)
 
-    for nr, df in mapping_table.groupby('nr'):
-        lithology[nr] = np.float32(__get_values(df['lithology'], ascending_depth))
-        thickness[nr] = np.float32(__get_values(df['thickness'], ascending_depth))
-        organic[nr] = np.float32(__get_values(df['orgmatter'], ascending_depth))
+    to_fraction = 100
+    with IgnoreNumbaTypeSafetyWarning():
+        for nr, df in mapping_table.groupby('nr'):
+            lith = __get_values(df['lithology'], ascending_depth)
+            thick = __get_values(df['thickness'], ascending_depth)
+            org = __get_values(df['orgmatter'] / to_fraction, ascending_depth)
+            lut = __get_values(df['lutum'] / to_fraction, ascending_depth)
+
+            lithology[nr] = np.float32(lith)
+            thickness[nr] = np.float32(thick)
+            organic[nr] = np.float32(org)
+            lutum[nr] = np.float32(lut)
 
     return NumbaDicts(thickness, lithology, organic)
 
