@@ -220,11 +220,14 @@ class VoxelModel(Raster):
         self.dz = dz
 
     def __repr__(self):
-        instance = f'atmod.{self.__class__.__name__} instance'
+        instance = f'atmod.{self.__class__.__name__}'
         layers = self.ds.data_vars
         dimensions = f'Dimensions: {dict(self.dims)}'
         resolution = f'Resolution (y, x, z): {self.cellsize, self.cellsize, self.dz}'
         return f'{instance}\n{layers}\n{dimensions}\n{resolution}'
+
+    def __getattr__(self, attr):
+        return self.ds[attr]
 
     def __getitem__(self, item):
         return self.ds[item]
