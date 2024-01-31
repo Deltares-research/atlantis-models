@@ -87,6 +87,10 @@ class GeoTop(VoxelModel):
         ds = cls.coordinates_to_cellcenters(ds, cellsize)
         ds = ds.sel(x=slice(xmin, xmax), y=slice(ymin, ymax))
         ds = _follow_gdal_conventions(ds)
+
+        if data_vars is not None:
+            ds = ds[data_vars]
+
         return cls(ds, cellsize, dz, crs)
 
 
