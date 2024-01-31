@@ -7,6 +7,9 @@ from pathlib import WindowsPath
 from typing import Union
 from rasterio.crs import CRS
 from rasterio.enums import Resampling
+from shapely.geometry import box
+
+from atmod.utils import sample_along_line
 
 
 class AtlansParameters:
@@ -222,7 +225,7 @@ class VoxelModel(Raster):
     def __repr__(self):
         instance = f'atmod.{self.__class__.__name__}'
         layers = self.ds.data_vars
-        dimensions = f'Dimensions: {dict(self.dims)}'
+        dimensions = f'Dimensions: {dict(self.sizes)}'
         resolution = f'Resolution (y, x, z): {self.cellsize, self.cellsize, self.dz}'
         return f'{instance}\n{layers}\n{dimensions}\n{resolution}'
 
@@ -277,6 +280,45 @@ class VoxelModel(Raster):
         sel = self.ds.sel(y=other_y, x=other_x, z=other_z, method='nearest')
         sel = sel.assign_coords({'y': other_y, 'x': other_x, 'z': other_z})
         return self.__class__(sel, other.cellsize, other.dz)
+
+    def select_with_line(self, line, dist=None, nsamples=None, cut_edges=True):
+        """
+        Use a Shapely LineString to select data along the x and y dims of the VoxelModel
+        for the creation of cross-sections. Sampling can be done using a specified dist-
+        ance or a specified number of samples that need to be taken along the line.
+
+        Parameters
+        ----------
+        line : LineString
+            shapely.geometry.LineString object to use for sampling.
+        dist : int, float, optional
+            Distance between each sample along the line. Takes equally distant samples
+            from the start of the line untill it reaches the end. The default is None.
+        nsamples : int, optional
+            Number of samples to take along the line between the beginning and the end.
+            The default is None.
+        cut_edges : bool, optional
+            Specify whether to only sample where the line intersects with the bounding
+            box of the VoxelModel. If True, parts of the line that are outside removed.
+
+        Raises
+        ------
+        ValueError
+            If both or none of dist and nsamples are specified.
+
+        Returns
+        -------
+        ds_sel : xr.Dataset or xr.DataArray
+            2D Xarray Dataset with the VoxelModel variables with new dimension 'dist'
+            for distance.
+
+        """
+        if cut_edges:
+            bbox = box(*self.bounds)
+            line = line.intersection(bbox)
+
+        section = sample_along_line(self.ds, line, dist, nsamples, cut_edges)
+        return section
 
     def drop_vars(self, data_vars: Union[str, list], inplace=True):
         if inplace:
