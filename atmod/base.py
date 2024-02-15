@@ -218,10 +218,11 @@ class VoxelModel(Raster):
         ds: xr.Dataset,
         cellsize: Union[int, float],
         dz: Union[int, float],
-        crs: Union[str, int, CRS] = None,
+        epsg: Union[str, int, CRS] = None,
     ):
-        Raster.__init__(self, ds, cellsize, crs)
+        Raster.__init__(self, ds, cellsize, None)
         self.dz = dz
+        self.epsg = epsg
 
     def __repr__(self):
         instance = f'atmod.{self.__class__.__name__}'
@@ -334,7 +335,7 @@ class VoxelModel(Raster):
             'dtype': 'float32',
             'width': self.ncols,
             'height': self.nrows,
-            'crs': self.crs.to_string(),
+            'crs': CRS.from_epsg(self.epsg),
             'nodata': np.nan,
             'transform': affine,
             'count': 1,
