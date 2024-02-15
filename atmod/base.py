@@ -183,7 +183,8 @@ class Raster(Spatial):
 
         """
         x_rotation, y_rotation = 0.0, 0.0
-        return self.ncols, x_rotation, self.xmin, y_rotation, -self.nrows, self.ymax
+        xsize, ysize = self.cellsize, -self.cellsize
+        return xsize, x_rotation, self.xmin, y_rotation, ysize, self.ymax
 
     def set_cellsize(
         self,
@@ -225,7 +226,7 @@ class VoxelModel(Raster):
     def __repr__(self):
         instance = f'atmod.{self.__class__.__name__}'
         layers = self.ds.data_vars
-        dimensions = f'Dimensions: {dict(self.sizes)}'
+        dimensions = f'Dimensions: {dict(self.ds.sizes)}'
         resolution = f'Resolution (y, x, z): {self.cellsize, self.cellsize, self.dz}'
         return f'{instance}\n{layers}\n{dimensions}\n{resolution}'
 
@@ -326,16 +327,7 @@ class VoxelModel(Raster):
         else:
             return self.__class__(self.ds.drop_vars(data_vars), self.cellsize, self.dz)
 
-    def zslice_to_tiff(
-        self, layer: str, z: Union[int, float], outputpath: Union[str, WindowsPath]
-    ):
-        zslice = self.ds[layer].sel(z=z)
-
-        if not self.x_ascending:
-            zslice = zslice.isel(x=slice(None, None, -1))
-        if self.y_ascending:
-            zslice = zslice.isel(y=slice(None, None, -1))
-
+    def _get_raster_meta(self):
         affine = self.get_affine()
         meta = {
             'driver': 'GTiff',
@@ -347,6 +339,20 @@ class VoxelModel(Raster):
             'transform': affine,
             'count': 1,
         }
+        return meta
+
+    def zslice_to_tiff(
+        self, layer: str, z: Union[int, float], outputpath: Union[str, WindowsPath]
+    ):
+        zslice = self.ds[layer].sel(z=z)
+
+        if not self.x_ascending:
+            zslice = zslice.isel(x=slice(None, None, -1))
+        if self.y_ascending:
+            zslice = zslice.isel(y=slice(None, None, -1))
+
+        meta = self._get_raster_meta()
+
         with rasterio.open(outputpath, 'w', **meta) as dst:
             dst.write(zslice.values, 1)
 
