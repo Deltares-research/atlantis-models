@@ -9,8 +9,8 @@ from atmod.templates import get_full_like
 
 def combine_data_sources(ahn, geotop, nl3d, soilmap, soilmap_dicts, parameters):
     voxelmodel = combine_geotop_nl3d(geotop, nl3d)
-    # _mask_depth not as a class function because selection is too specific  # noqa: E501
-    voxelmodel = _mask_depth(voxelmodel)
+
+    voxelmodel = _mask_depth(voxelmodel) # _mask_depth not as a class function because selection is too specific  # noqa: E501
 
     thickness = get_full_like(voxelmodel, 0.5, np.nan)
     lithoclass = voxelmodel['lithok'].values

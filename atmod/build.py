@@ -95,7 +95,7 @@ if __name__ == "__main__":
     from atmod.bro_models import BroBodemKaart, GeoTop, Nl3d
 
     bbox = (200_000, 435_000, 210_000, 445_000)
-    bbox = (200_000, 435_000, 201_000, 436_000)
+    # bbox = (200_000, 435_000, 201_000, 436_000)
     path_gpkg = r'c:\Users\knaake\OneDrive - Stichting Deltares\Documents\data\dino\bro_bodemkaart.gpkg'  # noqa: E501
     path_glg = r'n:\Projects\11209000\11209259\B. Measurements and calculations\009 effectmodule bodemdaling\data\1-external\deltascenarios\S2050BP18\Modflow\GLG_19120101000000.asc'  # noqa: E501
 
@@ -106,12 +106,17 @@ if __name__ == "__main__":
         r'p:\430-tgg-data\Geotop\geotop2023\geotop.nc',
         bbox=bbox,
         data_vars=['strat', 'lithok'],
+        lazy=False
     )
     nl3d = Nl3d.from_netcdf(
-        r'p:\430-tgg-data\NL3D\nl3d.nc', bbox=bbox, data_vars=['strat', 'lithok']
+        r'p:\430-tgg-data\NL3D\nl3d.nc',
+        bbox=bbox,
+        data_vars=['strat', 'lithok'],
+        lazy=False
     )
     soilmap = BroBodemKaart.from_geopackage(path_gpkg, bbox=bbox)
 
     parameters = AtlansParameters()
 
     model = build_atlantis_model(ahn, glg, geotop, nl3d, soilmap, parameters)
+    print(2)

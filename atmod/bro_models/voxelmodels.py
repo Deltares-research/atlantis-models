@@ -15,6 +15,7 @@ class GeoTop(VoxelModel):
         nc_path: Union[str, WindowsPath],
         data_vars: ArrayLike = None,
         bbox: tuple = None,
+        lazy: bool = True,
         **xr_kwargs
         ):
         """
@@ -30,6 +31,9 @@ class GeoTop(VoxelModel):
         bbox : tuple, optional
             Enter a tuple (xmin, ymin, xmax, ymax) to return a selected area of GeoTop.
             The default is None.
+        lazy : bool, optional
+            If True, netcdf loads lazily. Use False for speed improvements for larger
+            areas but that still fit into memory. The default is False.
 
         Returns
         -------
@@ -49,6 +53,10 @@ class GeoTop(VoxelModel):
 
         if data_vars is not None:
             ds = ds[data_vars]
+
+        if not lazy:
+            print('Load data')
+            ds = ds.load()
 
         ds = _follow_gdal_conventions(ds)
         return cls(ds, cellsize, dz, crs)
@@ -101,6 +109,7 @@ class Nl3d(VoxelModel):
         nc_path: Union[str, WindowsPath],
         data_vars: ArrayLike = None,
         bbox: tuple = None,
+        lazy: bool = True,
         **xr_kwargs
         ):
         """
@@ -116,6 +125,9 @@ class Nl3d(VoxelModel):
         bbox : tuple, optional
             Enter a tuple (xmin, ymin, xmax, ymax) to return a selected area of NL3D.
             The default is None.
+        lazy : bool, optional
+            If True, netcdf loads lazily. Use False for speed improvements for larger
+            areas but that still fit into memory. The default is False.
 
         Returns
         -------
@@ -133,6 +145,10 @@ class Nl3d(VoxelModel):
 
         if data_vars is not None:
             ds = ds[data_vars]
+
+        if not lazy:
+            print('Load data')
+            ds = ds.load()
 
         ds = _follow_gdal_conventions(ds)
         return cls(ds, cellsize, dz, crs)

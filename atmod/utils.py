@@ -143,4 +143,4 @@ def sample_along_line(ds, line, dist=None, nsamples=None, cut_edges=True):
     )
     ds_sel = ds_sel.assign_coords(dist=('dist', dist))
 
-    return ds_sel
+    return ds_sel.transpose('z', 'dist')
