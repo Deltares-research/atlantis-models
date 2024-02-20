@@ -231,9 +231,6 @@ class VoxelModel(Raster):
         resolution = f'Resolution (y, x, z): {self.cellsize, self.cellsize, self.dz}'
         return f'{instance}\n{layers}\n{dimensions}\n{resolution}'
 
-    def __getattr__(self, attr):
-        return self.ds[attr]
-
     def __getitem__(self, item):
         return self.ds[item]
 
@@ -281,7 +278,7 @@ class VoxelModel(Raster):
 
         sel = self.ds.sel(y=other_y, x=other_x, z=other_z, method='nearest')
         sel = sel.assign_coords({'y': other_y, 'x': other_x, 'z': other_z})
-        return self.__class__(sel, other.cellsize, other.dz)
+        return self.__class__(sel, other.cellsize, other.dz, other.crs)
 
     def select_with_line(self, line, dist=None, nsamples=None, cut_edges=True):
         """
@@ -362,7 +359,7 @@ class VoxelModel(Raster):
         """
         2D DataArray where GeoTop contains valid voxels at y, x locations.
         """
-        if not hasattr(self, '_isvalid'):
+        if not hasattr(self, '_isvalid_area'):
             self.get_isvalid_area()
         return self._isvalid_area
 
