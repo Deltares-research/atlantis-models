@@ -92,10 +92,12 @@ def build_atlantis_model(
 
 
 if __name__ == "__main__":
+    import time
     from atmod.bro_models import BroBodemKaart, GeoTop, Nl3d
 
-    bbox = (200_000, 435_000, 210_000, 445_000)
-    # bbox = (200_000, 435_000, 201_000, 436_000)
+    # bbox = (200_000, 435_000, 210_000, 445_000)
+    # bbox = (150_000, 400_000, 250_000, 500_000)
+    bbox = (200_000, 435_000, 201_000, 436_000)
     path_gpkg = r'c:\Users\knaake\OneDrive - Stichting Deltares\Documents\data\dino\bro_bodemkaart.gpkg'  # noqa: E501
     path_glg = r'n:\Projects\11209000\11209259\B. Measurements and calculations\009 effectmodule bodemdaling\data\1-external\deltascenarios\S2050BP18\Modflow\GLG_19120101000000.asc'  # noqa: E501
 
@@ -118,5 +120,8 @@ if __name__ == "__main__":
 
     parameters = AtlansParameters()
 
+    start = time.perf_counter()
     model = build_atlantis_model(ahn, glg, geotop, nl3d, soilmap, parameters)
+    end = time.perf_counter()
+    print(f'Building took {end - start}')
     print(2)

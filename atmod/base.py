@@ -88,7 +88,7 @@ class Raster(Spatial):
 
     def __repr__(self):
         instance = f'atmod.{self.__class__.__name__} instance'
-        dimensions = f'Dimensions: {dict(self.dims)}'
+        dimensions = f'Dimensions: {dict(self.ds.sizes)}'
         resolution = f'Resolution (y, x): {self.cellsize, self.cellsize}'
         return f'{instance}\n{dimensions}\n{resolution}'
 
@@ -163,11 +163,11 @@ class Raster(Spatial):
 
     @property
     def x_ascending(self):
-        return self.xmax > self.xmin
+        return self.xcoords[-1] > self.xcoords[0]
 
     @property
     def y_ascending(self):
-        return self.ymax > self.ymin
+        return self.ycoords[-1] > self.ycoords[0]
 
     @property
     def dtype(self):
@@ -270,6 +270,17 @@ class VoxelModel(Raster):
     @property
     def dtype(self):
         return self.ds.dtype
+
+    @property
+    def z_ascending(self):
+        return self.zcoords[-1] > self.zcoords[0]
+
+    @staticmethod
+    def coordinates_to_cellcenters(ds, cellsize, dz):
+        ds['x'] = ds['x'] + (cellsize/2)
+        ds['y'] = ds['y'] + (cellsize/2)
+        ds['z'] = ds['z'] + (dz/2)
+        return ds
 
     def select_like(self, other):
         other_y = other.ycoords
