@@ -45,7 +45,7 @@ class GeoTop(VoxelModel):
         crs = 28992
 
         ds = xr.open_dataset(nc_path, **xr_kwargs)
-        ds = cls.coordinates_to_cellcenters(ds, cellsize)
+        ds = cls.coordinates_to_cellcenters(ds, cellsize, dz)
 
         if bbox is not None:
             xmin, ymin, xmax, ymax = bbox
@@ -60,12 +60,6 @@ class GeoTop(VoxelModel):
 
         ds = _follow_gdal_conventions(ds)
         return cls(ds, cellsize, dz, crs)
-
-    @staticmethod
-    def coordinates_to_cellcenters(ds, cellsize):
-        ds['x'] = ds['x'] + (cellsize/2)
-        ds['y'] = ds['y'] + (cellsize/2)
-        return ds
 
     @classmethod
     def from_opendap(cls, url, bbox: tuple, data_vars: ArrayLike = None):
@@ -92,7 +86,7 @@ class GeoTop(VoxelModel):
 
         xmin, ymin, xmax, ymax = bbox
         ds = xr.open_dataset(url, chunks={'y': 200, 'x': 200})
-        ds = cls.coordinates_to_cellcenters(ds, cellsize)
+        ds = cls.coordinates_to_cellcenters(ds, cellsize, dz)
         ds = ds.sel(x=slice(xmin, xmax), y=slice(ymin, ymax))
         ds = _follow_gdal_conventions(ds)
 
@@ -134,10 +128,12 @@ class Nl3d(VoxelModel):
         Nl3d
             Nl3d instance of the netcdf file.
         """
-        ds = xr.open_dataset(nc_path, **xr_kwargs)
         cellsize = 250
         dz = 1.0
         crs = 28992
+
+        ds = xr.open_dataset(nc_path, **xr_kwargs)
+        ds = cls.coordinates_to_cellcenters(ds, cellsize, dz)
 
         if bbox is not None:
             xmin, ymin, xmax, ymax = bbox

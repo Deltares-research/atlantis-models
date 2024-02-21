@@ -54,6 +54,10 @@ def _follow_gdal_conventions(ds):
         ds = ds.transpose("y", "x", "z")
     else:
         ds = ds.transpose("y", "x")
+
+    if ds['y'][-1] > ds['y'][0]:
+        ds = ds.sel(y=slice(None, None, -1))
+
     return ds
 
 
