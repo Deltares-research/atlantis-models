@@ -394,8 +394,46 @@ class VoxelModel(Raster):
         self._isvalid_area = np.any(self.isvalid, axis=2)
         return self._isvalid_area
 
+    def _get_indices_2d(self, da, which='max'):
+        summed = np.cumsum(da.values, axis=2)
+        summed[~self.isvalid.values] = -1
+
+        if which == 'max':
+            idxs = np.argmax(summed, axis=2)
+        elif which == 'min':
+            idxs = np.argmax(summed==1, axis=2)
+        else:
+            raise ValueError('"which" can only be "min" or "max".')
+        return idxs
+
+    def select_top(self, cond):
+        idxs = self._get_indices_2d(cond, which='max')
+        top = self['z'].values[idxs] + (0.5 * self.dz)
+        top[~self.isvalid_area] = np.nan
+
+        top = xr.DataArray(
+            top,
+            coords={'y': self.ycoords, 'x': self.xcoords},
+            dims=('y', 'x')
+        )
+
+        return Raster(top, self.cellsize, self.crs)
+
+    def select_bottom(self, cond):
+        idxs = self._get_indices_2d(cond, which='min')
+        bottom = self['z'].values[idxs] - (0.5 * self.dz)
+        bottom[~self.isvalid_area] = np.nan
+
+        bottom = xr.DataArray(
+            bottom,
+            coords={'y': self.ycoords, 'x': self.xcoords},
+            dims=('y', 'x')
+        )
+
+        return Raster(bottom, self.cellsize, self.crs)
+
     def mask_surface_level(self):
-        max_idx_valid = np.argmax(np.cumsum(self.isvalid.values, axis=2), axis=2)
+        max_idx_valid = self._get_indices_2d(self.isvalid, 'max')
         return max_idx_valid
 
 

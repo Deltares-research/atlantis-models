@@ -2,7 +2,7 @@ import numpy as np
 import xarray as xr
 from typing import Union, TypeVar
 
-from atmod.base import Raster, VoxelModel, Mapping, AtlansParameters
+from atmod.base import Raster, VoxelModel, Mapping, AtlansParameters, AtlansStrat
 from atmod.merge import combine_data_sources
 from atmod.preprocessing import (
     get_numba_mapping_dicts_from,
@@ -49,6 +49,11 @@ def create_atlantis_variables(voxelmodel, glg, parameters):
     voxelmodel['no_shrinkage_thickness'] = xr.full_like(
         glg.ds, parameters.no_shrinkage_thickness
     )
+
+    bottom_holocene = voxelmodel.select_bottom(
+        voxelmodel['geology']==AtlansStrat.holocene
+        )
+    voxelmodel['domainbase'] = bottom_holocene.ds
 
     return voxelmodel
 
@@ -101,9 +106,9 @@ def build_atlantis_model(
 
 if __name__ == "__main__":
     import time
-    from atmod.bro_models import BroBodemKaart, GeoTop, Nl3d
-
-    bbox = (200_000, 435_000, 201_000, 436_000)
+    from atmod.bro_models import BroBodemKaart, GeoTop, Nl3d, StratGeoTop
+    bbox = (150_000, 400_000, 250_000, 500_000)
+    # bbox = (200_000, 435_000, 201_000, 436_000)
     path_gpkg = r'c:\Users\knaake\OneDrive - Stichting Deltares\Documents\data\dino\bro_bodemkaart.gpkg'  # noqa: E501
     path_glg = r'n:\Projects\11209000\11209259\B. Measurements and calculations\009 effectmodule bodemdaling\data\1-external\deltascenarios\S2050BP18\Modflow\GLG_19120101000000.asc'  # noqa: E501
 
@@ -116,18 +121,18 @@ if __name__ == "__main__":
         data_vars=['strat', 'lithok'],
         lazy=False
     )
-    nl3d = Nl3d.from_netcdf(
-        r'p:\430-tgg-data\NL3D\nl3d.nc',
-        bbox=bbox,
-        data_vars=['strat', 'lithok'],
-        lazy=False
-    )
-    soilmap = BroBodemKaart.from_geopackage(path_gpkg, bbox=bbox)
+    # nl3d = Nl3d.from_netcdf(
+    #     r'p:\430-tgg-data\NL3D\nl3d.nc',
+    #     bbox=bbox,
+    #     data_vars=['strat', 'lithok'],
+    #     lazy=False
+    # )
+    # soilmap = BroBodemKaart.from_geopackage(path_gpkg, bbox=bbox)
 
-    parameters = AtlansParameters()
+    # parameters = AtlansParameters()
 
-    start = time.perf_counter()
-    model = build_atlantis_model(ahn, glg, geotop, nl3d, soilmap, parameters)
-    end = time.perf_counter()
-    print(f'Building took {end - start}')
+    # start = time.perf_counter()
+    # model = build_atlantis_model(ahn, glg, geotop, nl3d, soilmap, parameters)
+    # end = time.perf_counter()
+    # print(f'Building took {end - start}')
     print(2)
