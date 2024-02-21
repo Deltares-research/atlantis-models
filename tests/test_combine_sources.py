@@ -18,6 +18,11 @@ class TestCombineColumns:
         return thickness
 
     @pytest.fixture
+    def test_voxel_geology(self):
+        geology = np.repeat([2, 1, np.nan], [7, 3, 5])
+        return geology
+
+    @pytest.fixture
     def test_voxel_lithology(self):
         lithology = np.repeat([4, 2, 1, 3, np.nan], [3, 2, 3, 2, 5])
         return lithology
@@ -41,9 +46,14 @@ class TestCombineColumns:
 
     @pytest.mark.unittest
     def test_voxel_columns_match(
-        self, test_voxel_thickness, test_voxel_lithology, test_voxel_organic
+        self,
+        test_voxel_thickness,
+        test_voxel_geology,
+        test_voxel_lithology,
+        test_voxel_organic
     ):
         assert len(test_voxel_thickness) == 15
+        assert len(test_voxel_geology) == 15
         assert len(test_voxel_lithology) == 15
         assert len(test_voxel_organic) == 15
 
@@ -58,14 +68,23 @@ class TestCombineColumns:
 
     @pytest.mark.unittest
     def test_fill_anthropogenic(
-        self, test_voxel_thickness, test_voxel_lithology, test_voxel_organic
+        self,
+        test_voxel_thickness,
+        test_voxel_geology,
+        test_voxel_lithology,
+        test_voxel_organic
     ):
         difference = 3.1
-        vt, vl, vo = _fill_anthropogenic(
-            test_voxel_thickness, test_voxel_lithology, test_voxel_organic, difference
+        vt, vg, vl, vo = _fill_anthropogenic(
+            test_voxel_thickness,
+            test_voxel_geology,
+            test_voxel_lithology,
+            test_voxel_organic,
+            difference
         )
         filled_index = 10
         assert vt[filled_index] == difference
+        assert vg[filled_index] == 1.0
         assert vl[filled_index] == 0.0
         assert vo[filled_index] == 0.0
 
@@ -74,7 +93,11 @@ class TestCombineColumns:
 
     @pytest.mark.unittest
     def test_shift_voxel_surface_up_small_thickness(
-        self, test_voxel_thickness, test_voxel_lithology, test_voxel_organic
+        self,
+        test_voxel_thickness,
+        test_voxel_geology,
+        test_voxel_lithology,
+        test_voxel_organic
     ):
         modelbase = -5.0
         surface = 0.05
@@ -82,8 +105,9 @@ class TestCombineColumns:
         thickness_to_shift = surface - (modelbase + np.nansum(test_voxel_thickness))
         assert_almost_equal(thickness_to_shift, 0.05)
 
-        vt, _, _ = _shift_voxel_surface_up(
+        vt, _, _, _ = _shift_voxel_surface_up(
             test_voxel_thickness,
+            test_voxel_geology,
             test_voxel_lithology,
             test_voxel_organic,
             surface,
@@ -97,7 +121,11 @@ class TestCombineColumns:
 
     @pytest.mark.unittest
     def test_shift_voxel_surface_up(
-        self, test_voxel_thickness, test_voxel_lithology, test_voxel_organic
+        self,
+        test_voxel_thickness,
+        test_voxel_geology,
+        test_voxel_lithology,
+        test_voxel_organic
     ):
         modelbase = -5.0
         surface = 0.15
@@ -105,8 +133,9 @@ class TestCombineColumns:
         thickness_to_shift = surface - (modelbase + np.nansum(test_voxel_thickness))
         assert_almost_equal(thickness_to_shift, 0.15)
 
-        vt, vl, vo = _shift_voxel_surface_up(
+        vt, vg, vl, vo = _shift_voxel_surface_up(
             test_voxel_thickness,
+            test_voxel_geology,
             test_voxel_lithology,
             test_voxel_organic,
             surface,
@@ -115,6 +144,7 @@ class TestCombineColumns:
         changed_voxel_idx = 10
 
         assert_almost_equal(vt[changed_voxel_idx], 0.15)
+        assert vg[changed_voxel_idx] == vg[changed_voxel_idx - 1]
         assert vl[changed_voxel_idx] == vl[changed_voxel_idx - 1]
         assert vo[changed_voxel_idx] == vo[changed_voxel_idx - 1]
 
@@ -123,13 +153,18 @@ class TestCombineColumns:
 
     @pytest.mark.unittest
     def test_shift_voxel_surface_down_small_thickness(
-        self, test_voxel_thickness, test_voxel_lithology, test_voxel_organic
+        self,
+        test_voxel_thickness,
+        test_voxel_geology,
+        test_voxel_lithology,
+        test_voxel_organic
     ):
         modelbase = -5.0
         surface = -0.45
 
-        vt, vl, vo = _shift_voxel_surface_down(
+        vt, vg, vl, vo = _shift_voxel_surface_down(
             test_voxel_thickness,
+            test_voxel_geology,
             test_voxel_lithology,
             test_voxel_organic,
             surface,
@@ -138,6 +173,7 @@ class TestCombineColumns:
         changed_idx = 8
         assert_almost_equal(vt[changed_idx], 0.55)
         assert np.all(np.isnan(vt[changed_idx + 1 :]))
+        assert np.all(np.isnan(vg[changed_idx + 1 :]))
         assert np.all(np.isnan(vl[changed_idx + 1 :]))
         assert np.all(np.isnan(vo[changed_idx + 1 :]))
 
@@ -146,13 +182,18 @@ class TestCombineColumns:
 
     @pytest.mark.unittest
     def test_shift_voxel_surface_down(
-        self, test_voxel_thickness, test_voxel_lithology, test_voxel_organic
+        self,
+        test_voxel_thickness,
+        test_voxel_geology,
+        test_voxel_lithology,
+        test_voxel_organic
     ):
         modelbase = -5.0
         surface = -0.25
 
-        vt, _, _ = _shift_voxel_surface_down(
+        vt, _, _, _ = _shift_voxel_surface_down(
             test_voxel_thickness,
+            test_voxel_geology,
             test_voxel_lithology,
             test_voxel_organic,
             surface,
@@ -168,6 +209,7 @@ class TestCombineColumns:
     def test_combine_fitting_soilprofile(
         self,
         test_voxel_thickness,
+        test_voxel_geology,
         test_voxel_lithology,
         test_voxel_organic,
         test_soil_thickness,
@@ -177,8 +219,9 @@ class TestCombineColumns:
         modelbase = -5
         surface = 1.2
 
-        vt, vl, vo = _combine_with_soilprofile(
+        vt, vg, vl, vo = _combine_with_soilprofile(
             test_voxel_thickness,
+            test_voxel_geology,
             test_voxel_lithology,
             test_voxel_organic,
             test_soil_thickness,
@@ -190,11 +233,14 @@ class TestCombineColumns:
         min_idx_soil = 10
         max_idx_soil = min_idx_soil + len(test_soil_thickness)
 
+        top_idx_geology = 9
+
         assert_equal(vt[min_idx_soil:max_idx_soil], test_soil_thickness)
+        assert_equal(vg[min_idx_soil:max_idx_soil], test_voxel_geology[top_idx_geology])
         assert_equal(vl[min_idx_soil:max_idx_soil], test_soil_lithology)
         assert_equal(vo[min_idx_soil:max_idx_soil], test_soil_organic)
 
-        remaining_nans = np.array([np.sum(np.isnan(v)) for v in [vt, vl, vo]])
+        remaining_nans = np.array([np.sum(np.isnan(v)) for v in [vt, vg, vl, vo]])
         assert_array_equal(remaining_nans, 1)
 
         new_surface = modelbase + np.nansum(vt)
@@ -204,6 +250,7 @@ class TestCombineColumns:
     def test_combine_overlapping_soilprofile(
         self,
         test_voxel_thickness,
+        test_voxel_geology,
         test_voxel_lithology,
         test_voxel_organic,
         test_soil_thickness,
@@ -213,8 +260,9 @@ class TestCombineColumns:
         modelbase = -5
         surface = 0.45
 
-        vt, vl, vo = _combine_with_soilprofile(
+        vt, vg, vl, vo = _combine_with_soilprofile(
             test_voxel_thickness,
+            test_voxel_geology,
             test_voxel_lithology,
             test_voxel_organic,
             test_soil_thickness,
@@ -227,12 +275,15 @@ class TestCombineColumns:
         min_idx_soil = 9
         max_idx_soil = min_idx_soil + len(test_soil_thickness)
 
+        top_idx_geology = 9
+
         assert_equal(vt[min_idx_soil - 1], 0.25)
         assert_equal(vt[min_idx_soil:max_idx_soil], test_soil_thickness)
+        assert_equal(vg[min_idx_soil:max_idx_soil], test_voxel_geology[top_idx_geology])
         assert_equal(vl[min_idx_soil:max_idx_soil], test_soil_lithology)
         assert_equal(vo[min_idx_soil:max_idx_soil], test_soil_organic)
 
-        remaining_nans = np.array([np.sum(np.isnan(v)) for v in [vt, vl, vo]])
+        remaining_nans = np.array([np.sum(np.isnan(v)) for v in [vt, vg, vl, vo]])
         assert_array_equal(remaining_nans, 2)
 
         new_surface = modelbase + np.nansum(vt)
@@ -242,6 +293,7 @@ class TestCombineColumns:
     def test_combine_soilprofile_above(
         self,
         test_voxel_thickness,
+        test_voxel_geology,
         test_voxel_lithology,
         test_voxel_organic,
         test_soil_thickness,
@@ -251,8 +303,9 @@ class TestCombineColumns:
         modelbase = -5
         surface = 1.3
 
-        vt, vl, vo = _combine_with_soilprofile(
+        vt, vg, vl, vo = _combine_with_soilprofile(
             test_voxel_thickness,
+            test_voxel_geology,
             test_voxel_lithology,
             test_voxel_organic,
             test_soil_thickness,
@@ -265,12 +318,15 @@ class TestCombineColumns:
         min_idx_soil = 11
         max_idx_soil = min_idx_soil + len(test_soil_thickness)
 
+        top_idx_geology = 9
+
         assert_almost_equal(vt[min_idx_soil - 1], 0.1)
         assert_equal(vt[min_idx_soil:max_idx_soil], test_soil_thickness)
+        assert_equal(vg[min_idx_soil:max_idx_soil], test_voxel_geology[top_idx_geology])
         assert_equal(vl[min_idx_soil:max_idx_soil], test_soil_lithology)
         assert_equal(vo[min_idx_soil:max_idx_soil], test_soil_organic)
 
-        no_remaining_nans = ~np.any(np.isnan(np.array([vt, vl, vo])))
+        no_remaining_nans = ~np.any(np.isnan(np.array([vt, vg, vl, vo])))
         assert no_remaining_nans
 
         new_surface = modelbase + np.nansum(vt)
@@ -280,6 +336,7 @@ class TestCombineColumns:
     def test_combine_soilprofile_above_small_thickness(
         self,
         test_voxel_thickness,
+        test_voxel_geology,
         test_voxel_lithology,
         test_voxel_organic,
         test_soil_thickness,
@@ -289,8 +346,9 @@ class TestCombineColumns:
         modelbase = -5
         surface = 1.204
 
-        vt, vl, vo = _combine_with_soilprofile(
+        vt, vg, vl, vo = _combine_with_soilprofile(
             test_voxel_thickness,
+            test_voxel_geology,
             test_voxel_lithology,
             test_voxel_organic,
             test_soil_thickness,
@@ -303,11 +361,14 @@ class TestCombineColumns:
         min_idx_soil = 10
         max_idx_soil = min_idx_soil + len(test_soil_thickness)
 
+        top_idx_geology = 9
+
         assert_almost_equal(vt[min_idx_soil], 0.204)
+        assert_equal(vg[min_idx_soil:max_idx_soil], test_voxel_geology[top_idx_geology])
         assert_equal(vl[min_idx_soil:max_idx_soil], test_soil_lithology)
         assert_equal(vo[min_idx_soil:max_idx_soil], test_soil_organic)
 
-        remaining_nans = np.array([np.sum(np.isnan(v)) for v in [vt, vl, vo]])
+        remaining_nans = np.array([np.sum(np.isnan(v)) for v in [vt, vg, vl, vo]])
         assert_array_equal(remaining_nans, 1)
 
         new_surface = modelbase + np.nansum(vt)
@@ -317,6 +378,7 @@ class TestCombineColumns:
     def test_combine_soilprofile_below_small_thickness(
         self,
         test_voxel_thickness,
+        test_voxel_geology,
         test_voxel_lithology,
         test_voxel_organic,
         test_soil_thickness,
@@ -326,8 +388,9 @@ class TestCombineColumns:
         modelbase = -5
         surface = 0.703
 
-        vt, vl, vo = _combine_with_soilprofile(
+        vt, vg, vl, vo = _combine_with_soilprofile(
             test_voxel_thickness,
+            test_voxel_geology,
             test_voxel_lithology,
             test_voxel_organic,
             test_soil_thickness,
@@ -340,7 +403,10 @@ class TestCombineColumns:
         min_idx_soil = 9
         max_idx_soil = min_idx_soil + len(test_soil_thickness)
 
+        top_idx_geology = 9
+
         assert_almost_equal(vt[min_idx_soil], 0.203)
+        assert_equal(vg[min_idx_soil:max_idx_soil], test_voxel_geology[top_idx_geology])
         assert_equal(vl[min_idx_soil:max_idx_soil], test_soil_lithology)
         assert_equal(vo[min_idx_soil:max_idx_soil], test_soil_organic)
 

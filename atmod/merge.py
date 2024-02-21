@@ -13,13 +13,15 @@ def combine_data_sources(ahn, geotop, nl3d, soilmap, soilmap_dicts, parameters):
     voxelmodel = _mask_depth(voxelmodel, parameters.modelbase) # _mask_depth not as a class function because selection is too specific  # noqa: E501
 
     thickness = get_full_like(voxelmodel, 0.5, np.nan)
+    geology = voxelmodel['strat'].values
     lithoclass = voxelmodel['lithok'].values
     mass_organic = get_full_like(voxelmodel, 0.0)
     mass_organic[lithoclass == Lithology.organic] = parameters.mass_fraction_organic
 
-    thickness, lithology, organic = combine_voxels_and_soilmap(
+    thickness, geology, lithology, organic = combine_voxels_and_soilmap(
         ahn.values,
         thickness,
+        geology,
         lithoclass,
         mass_organic,
         soilmap.ds.values,
@@ -29,12 +31,13 @@ def combine_data_sources(ahn, geotop, nl3d, soilmap, soilmap_dicts, parameters):
         voxelmodel.zmin,
     )
 
+    voxelmodel['geology'] = (('y', 'x', 'z'), geology)
     voxelmodel['lithology'] = (('y', 'x', 'z'), lithology)
     voxelmodel['thickness'] = (('y', 'x', 'z'), thickness)
     voxelmodel['mass_fraction_organic'] = (('y', 'x', 'z'), organic)
     voxelmodel['surface'] = (ahn.dims, ahn.values)
 
-    voxelmodel.drop_vars(['lithok'])
+    voxelmodel.drop_vars(['strat', 'lithok'])
     return voxelmodel
 
 
@@ -64,13 +67,14 @@ def combine_geotop_nl3d(geotop: VoxelModel, nl3d: VoxelModel) -> VoxelModel:
     else:
         combined = xr.where(geotop.isvalid_area, geotop.ds, nl3d.ds)
 
-    return VoxelModel(combined, geotop.cellsize, geotop.dz)
+    return VoxelModel(combined, geotop.cellsize, geotop.dz, geotop.epsg)
 
 
 @numba.njit
 def combine_voxels_and_soilmap(
     ahn,
     thickness,
+    geology,
     lithology,
     organic,
     soilmap,
@@ -83,8 +87,9 @@ def combine_voxels_and_soilmap(
     no_soil_map = np.int16(0)
     for i in range(ysize):
         for j in range(xsize):
-            voxel_lithology = lithology[i, j, :]
             voxel_thickness = thickness[i, j, :]
+            voxel_geology = geology[i, j, :]
+            voxel_lithology = lithology[i, j, :]
             voxel_organic = organic[i, j, :]
 
             surface = ahn[i, j]
@@ -101,22 +106,28 @@ def combine_voxels_and_soilmap(
             surface_difference = surface - surface_level_voxels
 
             if surface_difference > 2:
-                vt, vl, vo = _fill_anthropogenic(
-                    voxel_thickness, voxel_lithology, voxel_organic, surface_difference
+                vt, vg, vl, vo = _fill_anthropogenic(
+                    voxel_thickness,
+                    voxel_geology,
+                    voxel_lithology,
+                    voxel_organic,
+                    surface_difference
                 )
 
             elif soilnr == no_soil_map or _top_is_anthropogenic(voxel_lithology):
                 if surface_level_voxels > surface:
-                    vt, vl, vo = _shift_voxel_surface_down(
+                    vt, vg, vl, vo = _shift_voxel_surface_down(
                         voxel_thickness,
+                        voxel_geology,
                         voxel_lithology,
                         voxel_organic,
                         surface,
                         modelbase,
                     )
                 elif surface_level_voxels < surface:
-                    vt, vl, vo = _shift_voxel_surface_up(
+                    vt, vg, vl, vo = _shift_voxel_surface_up(
                         voxel_thickness,
+                        voxel_geology,
                         voxel_lithology,
                         voxel_organic,
                         surface,
@@ -124,8 +135,9 @@ def combine_voxels_and_soilmap(
                     )
 
             else:
-                vt, vl, vo = _combine_with_soilprofile(
+                vt, vg, vl, vo = _combine_with_soilprofile(
                     voxel_thickness,
+                    voxel_geology,
                     voxel_lithology,
                     voxel_organic,
                     soilmap_thickness[soilnr],
@@ -136,25 +148,34 @@ def combine_voxels_and_soilmap(
                 )
 
             thickness[i, j, :] = vt
+            geology[i, j, :] = vg
             lithology[i, j, :] = vl
             organic[i, j, :] = vo
 
-    return thickness, lithology, organic
+    return thickness, geology, lithology, organic
 
 
 @numba.njit
-def _fill_anthropogenic(thickness, lithology, organic, difference):
+def _fill_anthropogenic(thickness, geology, lithology, organic, difference):
     anthropogenic = 0.0
     idx_to_fill = _get_top_voxel_idx(thickness) + 1
 
     thickness[idx_to_fill] = difference
+    geology[idx_to_fill] = geology[idx_to_fill-1]
     lithology[idx_to_fill] = anthropogenic
     organic[idx_to_fill] = anthropogenic
-    return thickness, lithology, organic
+    return thickness, geology, lithology, organic
 
 
 @numba.njit
-def _shift_voxel_surface_down(thickness, lithology, organic, surface, modelbase):
+def _shift_voxel_surface_down(
+    thickness,
+    geology,
+    lithology,
+    organic,
+    surface,
+    modelbase
+):
     depth_voxels = modelbase + np.cumsum(thickness)
 
     split_idx = np.argmax((depth_voxels >= surface) | np.isnan(depth_voxels))
@@ -164,35 +185,39 @@ def _shift_voxel_surface_down(thickness, lithology, organic, surface, modelbase)
     if new_thickness_voxel > 0.1:
         thickness[split_idx] = new_thickness_voxel
         thickness[split_idx + 1 :] = np.nan
+        geology[split_idx + 1 :] = np.nan
         lithology[split_idx + 1 :] = np.nan
         organic[split_idx + 1 :] = np.nan
     else:
         thickness[split_idx - 1] += new_thickness_voxel
         thickness[split_idx:] = np.nan
+        geology[split_idx:] = np.nan
         lithology[split_idx:] = np.nan
         organic[split_idx:] = np.nan
 
-    return thickness, lithology, organic
+    return thickness, geology, lithology, organic
 
 
 @numba.njit
-def _shift_voxel_surface_up(thickness, lithology, organic, surface, modelbase):
+def _shift_voxel_surface_up(thickness, geology, lithology, organic, surface, modelbase):
     top_idx = _get_top_voxel_idx(thickness)
     extra_thickness = surface - (modelbase + np.nansum(thickness))
 
     if extra_thickness > 0.1:
         thickness[top_idx + 1] = extra_thickness
+        geology[top_idx + 1] = geology[top_idx]
         lithology[top_idx + 1] = lithology[top_idx]
         organic[top_idx + 1] = organic[top_idx]
     else:
         thickness[top_idx] += extra_thickness
 
-    return thickness, lithology, organic
+    return thickness, geology, lithology, organic
 
 
 @numba.njit
 def _combine_with_soilprofile(
     thickness,
+    geology,
     lithology,
     organic,
     soil_thickness,
@@ -206,11 +231,12 @@ def _combine_with_soilprofile(
 
     split_idx = np.argmax(depth_voxels > split_elevation)
 
-    if split_idx == 0:
+    if split_idx == 0: # Bottom of soilprofile is above the highest voxel.
         split_idx = np.argmax(depth_voxels)
 
         surface_voxels = np.nanmax(depth_voxels)
-        if surface_voxels < split_elevation:
+        if surface_voxels < split_elevation: # fill with voxel if there is 'empty space'
+            geology[split_idx] = geology[split_idx - 1]
             lithology[split_idx] = lithology[split_idx - 1]
             organic[split_idx] = organic[split_idx - 1]
 
@@ -226,16 +252,25 @@ def _combine_with_soilprofile(
 
     max_idx_soil = min_idx_soil + len(soil_thickness)
 
+    holocene = 1.0
+    older = 2.0
+    top_idx_geology = _get_top_voxel_idx(geology)
+    if geology[top_idx_geology] == holocene:
+        geology[min_idx_soil:max_idx_soil] = holocene
+    else:
+        geology[min_idx_soil:max_idx_soil] = older
+
     thickness[min_idx_soil:max_idx_soil] = soil_thickness
     lithology[min_idx_soil:max_idx_soil] = soil_lithology
     organic[min_idx_soil:max_idx_soil] = soil_organic
 
     if max_idx_soil < len(thickness):
         thickness[max_idx_soil:] = np.nan
+        geology[max_idx_soil:] = np.nan
         lithology[max_idx_soil:] = np.nan
         organic[max_idx_soil:] = np.nan
 
-    return thickness, lithology, organic
+    return thickness, geology, lithology, organic
 
 
 @numba.njit

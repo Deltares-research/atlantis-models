@@ -38,6 +38,11 @@ class AtlansParameters:
         raise NotImplementedError
 
 
+class AtlansStrat:
+    holocene = 1
+    older = 2
+
+
 class Spatial(ABC):
     """
     Abstract base class for spatial objects.
@@ -353,7 +358,7 @@ class VoxelModel(Raster):
     def zslice_to_tiff(
         self, layer: str, z: Union[int, float], outputpath: Union[str, WindowsPath]
     ):
-        zslice = self.ds[layer].sel(z=z)
+        zslice = self.ds[layer].sel(z=z, method='nearest')
 
         if not self.x_ascending:
             zslice = zslice.isel(x=slice(None, None, -1))

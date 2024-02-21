@@ -4,7 +4,12 @@ from typing import Union, TypeVar
 
 from atmod.base import Raster, VoxelModel, Mapping, AtlansParameters
 from atmod.merge import combine_data_sources
-from atmod.preprocessing import get_numba_mapping_dicts_from, soilmap_to_raster
+from atmod.preprocessing import (
+    get_numba_mapping_dicts_from,
+    soilmap_to_raster,
+    map_geotop_strat,
+    map_nl3d_strat
+)
 from atmod.read import read_ahn, read_glg
 from atmod.templates import build_template
 from atmod.warnings import suppress_warnings
@@ -83,6 +88,9 @@ def build_atlantis_model(
     soilmap_dicts = get_numba_mapping_dicts_from(bodemkaart)
     soilmap = soilmap_to_raster(bodemkaart, ahn)
 
+    geotop = map_geotop_strat(geotop)
+    nl3d = map_nl3d_strat(nl3d)
+
     voxelmodel = combine_data_sources(
         ahn, geotop, nl3d, soilmap, soilmap_dicts, parameters
     )
@@ -95,8 +103,6 @@ if __name__ == "__main__":
     import time
     from atmod.bro_models import BroBodemKaart, GeoTop, Nl3d
 
-    # bbox = (200_000, 435_000, 210_000, 445_000)
-    # bbox = (150_000, 400_000, 250_000, 500_000)
     bbox = (200_000, 435_000, 201_000, 436_000)
     path_gpkg = r'c:\Users\knaake\OneDrive - Stichting Deltares\Documents\data\dino\bro_bodemkaart.gpkg'  # noqa: E501
     path_glg = r'n:\Projects\11209000\11209259\B. Measurements and calculations\009 effectmodule bodemdaling\data\1-external\deltascenarios\S2050BP18\Modflow\GLG_19120101000000.asc'  # noqa: E501
