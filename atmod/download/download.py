@@ -1,8 +1,6 @@
 import requests
-import numpy as np
 from typing import Union
 from pathlib import Path, WindowsPath
-from shapely.geometry import box
 
 
 def bro_bodemkaart_geopackage(outputfile: Union[str, WindowsPath]):

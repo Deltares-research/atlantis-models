@@ -8,9 +8,8 @@ from atmod.preprocessing import (
     get_numba_mapping_dicts_from,
     soilmap_to_raster,
     map_geotop_strat,
-    map_nl3d_strat
+    map_nl3d_strat,
 )
-from atmod.read import read_ahn, read_glg
 from atmod.templates import build_template
 from atmod.warnings import suppress_warnings
 
@@ -35,24 +34,26 @@ def _calc_rho_bulk(voxelmodel, parameters):
     return rho_bulk
 
 
-def create_atlantis_variables(voxelmodel, glg, parameters):
-    voxelmodel['phreatic_level'] = (glg.dims, glg.values)
+def create_atlantis_variables(voxelmodel, parameters, glg=None):
+    if glg is not None:
+        voxelmodel['phreatic_level'] = (glg.dims, glg.values)
+
     voxelmodel['rho_bulk'] = _calc_rho_bulk(voxelmodel, parameters)
-    voxelmodel['zbase'] = xr.full_like(glg.ds, parameters.modelbase)
+    voxelmodel['zbase'] = xr.full_like(voxelmodel['surface'], parameters.modelbase)
 
     voxelmodel['max_oxidation_depth'] = xr.full_like(
-        glg.ds, parameters.max_oxidation_depth
+        voxelmodel['surface'], parameters.max_oxidation_depth
     )
     voxelmodel['no_oxidation_thickness'] = xr.full_like(
-        glg.ds, parameters.no_oxidation_thickness
+        voxelmodel['surface'], parameters.no_oxidation_thickness
     )
     voxelmodel['no_shrinkage_thickness'] = xr.full_like(
-        glg.ds, parameters.no_shrinkage_thickness
+        voxelmodel['surface'], parameters.no_shrinkage_thickness
     )
 
     bottom_holocene = voxelmodel.select_bottom(
-        voxelmodel['geology']==AtlansStrat.holocene
-        )
+        voxelmodel['geology'] == AtlansStrat.holocene
+    )
     voxelmodel['domainbase'] = bottom_holocene.ds
 
     return voxelmodel
@@ -60,11 +61,11 @@ def create_atlantis_variables(voxelmodel, glg, parameters):
 
 def build_atlantis_model(
     ahn: Raster,
-    glg: Raster,
     geotop: VoxelModel,
     nl3d: VoxelModel,
     bodemkaart: Mapping,
     parameters: AtlansParameters,
+    glg: Raster = None,
 ):
     """
     Workflow to create a 3D subsurface model as input for Atlantis subsurface
@@ -74,8 +75,6 @@ def build_atlantis_model(
     ----------
     ahn : Raster
         _description_
-    glg : Raster
-        _description_
     geotop : VoxelModel
         _description_
     nl3d : VoxelModel
@@ -83,6 +82,8 @@ def build_atlantis_model(
     bodemkaart : Mapping
         _description_
     parameters : AtlansParameters
+        _description_
+    glg : Raster
         _description_
 
     Returns
@@ -100,44 +101,12 @@ def build_atlantis_model(
     voxelmodel = combine_data_sources(
         ahn, geotop, nl3d, soilmap, soilmap_dicts, parameters
     )
-    voxelmodel = create_atlantis_variables(voxelmodel, glg, parameters)
+    voxelmodel = create_atlantis_variables(voxelmodel, parameters, glg)
 
     voxelmodel = voxelmodel.ds
-    voxelmodel = voxelmodel.rename({'z': 'layer'}) # With renamed dimension it is no longer a vald atmod.VoxelModel  # noqa: E501
+    voxelmodel = voxelmodel.rename(
+        {'z': 'layer'}
+    )  # With renamed dimension it is no longer a vald atmod.VoxelModel  # noqa: E501
     voxelmodel['layer'] = np.arange(len(voxelmodel['layer'])) + 1
 
-    return voxelmodel.ds
-
-
-if __name__ == "__main__":
-    import time
-    from atmod.bro_models import BroBodemKaart, GeoTop, Nl3d
-    # bbox = (150_000, 400_000, 250_000, 500_000)
-    bbox = (200_000, 435_000, 201_000, 436_000)
-    path_gpkg = r'c:\Users\knaake\OneDrive - Stichting Deltares\Documents\data\dino\bro_bodemkaart.gpkg'  # noqa: E501
-    path_glg = r'n:\Projects\11209000\11209259\B. Measurements and calculations\009 effectmodule bodemdaling\data\1-external\deltascenarios\S2050BP18\Modflow\GLG_19120101000000.asc'  # noqa: E501
-
-    ahn = read_ahn(r'p:\430-tgg-data\ahn\dtm_100m.tif', bbox=bbox)
-    glg = read_glg(path_glg, bbox=bbox)
-
-    geotop = GeoTop.from_netcdf(
-        r'p:\430-tgg-data\Geotop\geotop2023\geotop.nc',
-        bbox=bbox,
-        data_vars=['strat', 'lithok'],
-        lazy=False
-    )
-    nl3d = Nl3d.from_netcdf(
-        r'p:\430-tgg-data\NL3D\nl3d.nc',
-        bbox=bbox,
-        data_vars=['strat', 'lithok'],
-        lazy=False
-    )
-    soilmap = BroBodemKaart.from_geopackage(path_gpkg, bbox=bbox)
-
-    parameters = AtlansParameters()
-
-    start = time.perf_counter()
-    model = build_atlantis_model(ahn, glg, geotop, nl3d, soilmap, parameters)
-    end = time.perf_counter()
-    print(f'Building took {end - start}')
-    print(2)
+    return voxelmodel

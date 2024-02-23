@@ -209,11 +209,3 @@ def get_numba_mapping_dicts_from(soilmap, ascending_depth=True):
         lutum[nr] = np.float32(lut)
 
     return NumbaDicts(thickness, lithology, organic, lutum)
-
-
-if __name__ == "__main__":
-    path_gpkg = r'c:\Users\knaake\OneDrive - Stichting Deltares\Documents\data\dino\bro_bodemkaart.gpkg'  # noqa: E501
-    soilmap = BroBodemKaart.from_geopackage(path_gpkg)
-
-    dicts = get_numba_mapping_dicts_from(soilmap)  # TODO: check negative keys?
-    print(2)
