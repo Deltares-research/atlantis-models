@@ -162,8 +162,8 @@ def divide_blocks(
         ):
     """
     Divide the area of a Raster or VoxelModel object into equal blocks of a specified
-    'y' and 'x' size and get the bounding boxes of each block. Blocks are created starting
-    from the top left corner of the area.
+    'y' and 'x' size and get the bounding boxes of each block. Blocks are created
+    starting from the top left corner of the area.
 
     Parameters
     ----------
