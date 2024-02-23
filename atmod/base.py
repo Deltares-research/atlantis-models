@@ -4,7 +4,7 @@ import rioxarray as rio
 import xarray as xr
 from abc import ABC, abstractmethod
 from pathlib import WindowsPath
-from typing import Union
+from typing import Union, Optional
 from rasterio.crs import CRS
 from rasterio.enums import Resampling
 from shapely.geometry import box
@@ -22,7 +22,7 @@ class AtlansParameters:
         shrinkage_degree: Union[int, float] = 0.7,
         max_oxidation_depth: Union[int, float] = 1.2,
         no_oxidation_thickness: Union[int, float] = 0.3,
-        no_shrinkage_thickness: Union[int, float] = 0.0
+        no_shrinkage_thickness: Union[int, float] = 0.0,
     ):
         self.modelbase = float(modelbase)
         self.mass_fraction_organic = float(mass_fraction_organic)
@@ -47,6 +47,7 @@ class Spatial(ABC):
     """
     Abstract base class for spatial objects.
     """
+
     @property
     @abstractmethod
     def bounds(self):
@@ -182,6 +183,23 @@ class Raster(Spatial):
     def values(self):
         return self.ds.values
 
+    def select(self, indexers: Optional[dict] = None, **xr_kwargs):
+        """
+        Return a new object instance whose data is given by selecting index
+        labels along the specified dimension(s).
+
+        Parameters
+        ----------
+        indexers : Optional[dict], optional
+            A dict with keys matching dimensions and values given
+            by scalars, slices or arrays of tick labels. For dimensions with
+            multi-index, the indexer may also be a dict-like object with keys
+            matching index level names.
+
+        """
+        sel = self.ds.sel(indexers, **xr_kwargs)
+        return self.__class__(sel, self.cellsize, self.crs)
+
     def get_affine(self) -> tuple:
         """
         Get an affine matrix based on the 2D extent of the data.
@@ -197,7 +215,7 @@ class Raster(Spatial):
         resampling_method=Resampling.bilinear,
         inplace=False,
     ):
-        upscale_factor =  self.cellsize / cellsize
+        upscale_factor = self.cellsize / cellsize
         new_width = int(self.ncols * upscale_factor)
         new_height = int(self.nrows * upscale_factor)
 
@@ -282,9 +300,9 @@ class VoxelModel(Raster):
 
     @staticmethod
     def coordinates_to_cellcenters(ds, cellsize, dz):
-        ds['x'] = ds['x'] + (cellsize/2)
-        ds['y'] = ds['y'] + (cellsize/2)
-        ds['z'] = ds['z'] + (dz/2)
+        ds['x'] = ds['x'] + (cellsize / 2)
+        ds['y'] = ds['y'] + (cellsize / 2)
+        ds['z'] = ds['z'] + (dz / 2)
         return ds
 
     def drop_vars(self, data_vars: Union[str, list], inplace=True):
@@ -357,7 +375,7 @@ class VoxelModel(Raster):
         if which == 'max':
             idxs = np.argmax(summed, axis=2)
         elif which == 'min':
-            idxs = np.argmax(summed==1, axis=2)
+            idxs = np.argmax(summed == 1, axis=2)
         else:
             raise ValueError('"which" can only be "min" or "max".')
         idxs[np.all(~da.values, axis=2)] = -1
@@ -375,12 +393,10 @@ class VoxelModel(Raster):
     def select_top(self, cond):
         idxs = self._get_indices_2d(cond, which='max')
         top = self['z'].values[idxs] + (0.5 * self.dz)
-        top[(~self.isvalid_area) | (idxs==-1)] = np.nan
+        top[(~self.isvalid_area) | (idxs == -1)] = np.nan
 
         top = xr.DataArray(
-            top,
-            coords={'y': self.ycoords, 'x': self.xcoords},
-            dims=('y', 'x')
+            top, coords={'y': self.ycoords, 'x': self.xcoords}, dims=('y', 'x')
         )
 
         return Raster(top, self.cellsize, self.crs)
@@ -388,12 +404,10 @@ class VoxelModel(Raster):
     def select_bottom(self, cond):
         idxs = self._get_indices_2d(cond, which='min')
         bottom = self['z'].values[idxs] - (0.5 * self.dz)
-        bottom[(~self.isvalid_area) | (idxs==-1)] = np.nan
+        bottom[(~self.isvalid_area) | (idxs == -1)] = np.nan
 
         bottom = xr.DataArray(
-            bottom,
-            coords={'y': self.ycoords, 'x': self.xcoords},
-            dims=('y', 'x')
+            bottom, coords={'y': self.ycoords, 'x': self.xcoords}, dims=('y', 'x')
         )
 
         return Raster(bottom, self.cellsize, self.crs)
@@ -439,7 +453,7 @@ class VoxelModel(Raster):
 
     def select_surface_level(self):
         surface_idx = self.get_surface_level_mask()
-        return self['z'][surface_idx] + (0.5*self.dz)
+        return self['z'][surface_idx] + (0.5 * self.dz)
 
 
 class Mapping(Spatial):
