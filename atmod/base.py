@@ -213,8 +213,8 @@ class Raster(Spatial):
     def set_crs(self, crs: Union[str, int, CRS]):
         self.ds.rio.write_crs(crs, inplace=True)
 
-    def to_tiff(self, outputpath):
-        pass
+    def to_raster(self, outputpath, **rio_kwargs):
+        self.ds.rio.to_raster(outputpath, **rio_kwargs)
 
 
 class VoxelModel(Raster):
@@ -404,12 +404,13 @@ class VoxelModel(Raster):
             idxs = np.argmax(summed==1, axis=2)
         else:
             raise ValueError('"which" can only be "min" or "max".')
+        idxs[np.all(~da.values, axis=2)] = -1
         return idxs
 
     def select_top(self, cond):
         idxs = self._get_indices_2d(cond, which='max')
         top = self['z'].values[idxs] + (0.5 * self.dz)
-        top[~self.isvalid_area] = np.nan
+        top[(~self.isvalid_area) | (idxs==-1)] = np.nan
 
         top = xr.DataArray(
             top,
@@ -422,7 +423,7 @@ class VoxelModel(Raster):
     def select_bottom(self, cond):
         idxs = self._get_indices_2d(cond, which='min')
         bottom = self['z'].values[idxs] - (0.5 * self.dz)
-        bottom[~self.isvalid_area] = np.nan
+        bottom[(~self.isvalid_area) | (idxs==-1)] = np.nan
 
         bottom = xr.DataArray(
             bottom,

@@ -44,4 +44,14 @@ section['strat'].sel(z=slice(-20, 5)).plot(ax=ax[0])
 section['lithok'].sel(z=slice(-20, 5)).isin(sand).plot(ax=ax[1])
 plt.show()
 
+
+channels = geotop.select_top(
+    geotop['strat'].isin(StratGeoTop.channel_belts.values)
+    )
+
+
+fig, ax = plt.subplots(figsize=(8, 4), tight_layout=True)
+channels.ds.plot(ax=ax)
+
+
 print(2)
