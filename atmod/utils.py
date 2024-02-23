@@ -3,8 +3,12 @@ import numpy as np
 import xarray as xr
 from pathlib import WindowsPath
 from sqlite3 import Error
-from typing import Union
+from typing import Union, TypeVar
 from rasterio.crs import CRS
+
+
+Raster = TypeVar('Raster')
+VoxelModel = TypeVar('VoxelModel')
 
 
 def create_connection(database: Union[str, WindowsPath]):
@@ -90,7 +94,7 @@ def _interpolate_point(line, loc):
     return loc, p.x, p.y
 
 
-def sample_along_line(ds, line, dist=None, nsamples=None, cut_edges=True):
+def sample_along_line(ds, line, dist=None, nsamples=None):
     """
     Sample x and y dims of an Xarray Dataset or DataArray over distance along a
     Shapely LineString object. Sampling can be done using a specified distance
@@ -148,3 +152,58 @@ def sample_along_line(ds, line, dist=None, nsamples=None, cut_edges=True):
     ds_sel = ds_sel.assign_coords(dist=('dist', dist))
 
     return ds_sel.transpose('z', 'dist')
+
+
+def divide_blocks(
+        area: Union[Raster, VoxelModel],
+        ysize: int = None,
+        xsize: int = None,
+        real_units: bool = False
+        ):
+    """
+    Divide the area of a Raster or VoxelModel object into equal blocks of a specified
+    'y' and 'x' size and get the bounding boxes of each block. Blocks are created starting
+    from the top left corner of the area.
+
+    Parameters
+    ----------
+    area : Union[Raster, VoxelModel]
+        Raster or VoxelModel object to divide into blocks.
+    ysize, xsize : int, optional
+        Block size in y and x direction respectively. The default is None
+    real_units : bool, optional
+        If True, use real map units of the input area. If False, y and x sizes
+        correspond with the number of cells in each direction. The default is False.
+
+    Returns
+    -------
+    list
+        List containing the bounding box tuples (xmin, ymin, xmax, ymax) for each block.
+
+    """
+    xmin, ymin, xmax, ymax = area.bounds
+
+    if not ysize:
+        ysize = ymax - ymin
+
+    if not xsize:
+        xsize = xmax - xmin
+
+    if not real_units:
+        ysize = ysize * area.cellsize
+        xsize = xsize * area.cellsize
+
+    block_bounds = []
+    for ytop in np.arange(ymax, ymin, -ysize):
+        ybottom = ytop - ysize
+        if ybottom < ymin:
+            ybottom = ymin
+
+        for xleft in np.arange(xmin, xmax, xsize):
+            xright = xleft + xsize
+            if xright > xmax:
+                xright = xmax
+
+            block_bounds.append((xleft, ybottom, xright, ytop))
+
+    return block_bounds
