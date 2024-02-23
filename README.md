@@ -14,9 +14,8 @@ Subsurface models are created from a combination BRO/DINO 2D/3D subsurface model
 - AHN (download links found [here](https://www.pdok.nl/introductie/-/article/actueel-hoogtebestand-nederland-ahn))
 - GLG: User input or use BRO GLG (found [here](https://basisregistratieondergrond.nl/inhoud-bro/registratieobjecten/modellen/model-grondwaterspiegeldiepte-wdm/))
 
-
 # How to install
-Currently, Atlantis-models is findable through the Python Package Index (PyPI). Installation can be installed directly from the repository with pip using the following command:
+Currently, Atlantis-models is not findable through the Python Package Index (PyPI). The package can be installed directly from the repository with pip using the following command:
 ```
 pip install git+https://gitlab.com/deltares/tgg-projects/atlantis_models.git
 ```
