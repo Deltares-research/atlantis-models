@@ -294,7 +294,7 @@ def _mask_depth(voxelmodel, base):
     else:
         min_idx = np.argmin(voxelmodel['z'].values > base)
 
-    highest_voxel = np.max(voxelmodel.mask_surface_level())
+    highest_voxel = np.max(voxelmodel.get_surface_level_mask())
     max_layers_soilmap = 9
 
     max_idx = highest_voxel + max_layers_soilmap

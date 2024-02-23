@@ -287,54 +287,6 @@ class VoxelModel(Raster):
         ds['z'] = ds['z'] + (dz/2)
         return ds
 
-    def select_like(self, other):
-        other_y = other.ycoords
-        other_x = other.xcoords
-        other_z = other.zcoords
-
-        sel = self.ds.sel(y=other_y, x=other_x, z=other_z, method='nearest')
-        sel = sel.assign_coords({'y': other_y, 'x': other_x, 'z': other_z})
-        return self.__class__(sel, other.cellsize, other.dz, other.crs)
-
-    def select_with_line(self, line, dist=None, nsamples=None, cut_edges=True):
-        """
-        Use a Shapely LineString to select data along the x and y dims of the VoxelModel
-        for the creation of cross-sections. Sampling can be done using a specified dist-
-        ance or a specified number of samples that need to be taken along the line.
-
-        Parameters
-        ----------
-        line : LineString
-            shapely.geometry.LineString object to use for sampling.
-        dist : int, float, optional
-            Distance between each sample along the line. Takes equally distant samples
-            from the start of the line untill it reaches the end. The default is None.
-        nsamples : int, optional
-            Number of samples to take along the line between the beginning and the end.
-            The default is None.
-        cut_edges : bool, optional
-            Specify whether to only sample where the line intersects with the bounding
-            box of the VoxelModel. If True, parts of the line that are outside removed.
-
-        Raises
-        ------
-        ValueError
-            If both or none of dist and nsamples are specified.
-
-        Returns
-        -------
-        ds_sel : xr.Dataset or xr.DataArray
-            2D Xarray Dataset with the VoxelModel variables with new dimension 'dist'
-            for distance.
-
-        """
-        if cut_edges:
-            bbox = box(*self.bounds)
-            line = line.intersection(bbox)
-
-        section = sample_along_line(self.ds, line, dist, nsamples, cut_edges)
-        return section
-
     def drop_vars(self, data_vars: Union[str, list], inplace=True):
         if inplace:
             self.ds = self.ds.drop_vars(data_vars)
@@ -394,6 +346,10 @@ class VoxelModel(Raster):
         self._isvalid_area = np.any(self.isvalid, axis=2)
         return self._isvalid_area
 
+    def get_surface_level_mask(self):
+        max_idx_valid = self._get_indices_2d(self.isvalid, 'max')
+        return max_idx_valid
+
     def _get_indices_2d(self, da, which='max'):
         summed = np.cumsum(da.values, axis=2)
         summed[~self.isvalid.values] = -1
@@ -406,6 +362,15 @@ class VoxelModel(Raster):
             raise ValueError('"which" can only be "min" or "max".')
         idxs[np.all(~da.values, axis=2)] = -1
         return idxs
+
+    def select_like(self, other):
+        other_y = other.ycoords
+        other_x = other.xcoords
+        other_z = other.zcoords
+
+        sel = self.ds.sel(y=other_y, x=other_x, z=other_z, method='nearest')
+        sel = sel.assign_coords({'y': other_y, 'x': other_x, 'z': other_z})
+        return self.__class__(sel, other.cellsize, other.dz, other.crs)
 
     def select_top(self, cond):
         idxs = self._get_indices_2d(cond, which='max')
@@ -433,9 +398,48 @@ class VoxelModel(Raster):
 
         return Raster(bottom, self.cellsize, self.crs)
 
-    def mask_surface_level(self):
-        max_idx_valid = self._get_indices_2d(self.isvalid, 'max')
-        return max_idx_valid
+    def select_with_line(self, line, dist=None, nsamples=None, cut_edges=True):
+        """
+        Use a Shapely LineString to select data along the x and y dims of the VoxelModel
+        for the creation of cross-sections. Sampling can be done using a specified dist-
+        ance or a specified number of samples that need to be taken along the line.
+
+        Parameters
+        ----------
+        line : LineString
+            shapely.geometry.LineString object to use for sampling.
+        dist : int, float, optional
+            Distance between each sample along the line. Takes equally distant samples
+            from the start of the line untill it reaches the end. The default is None.
+        nsamples : int, optional
+            Number of samples to take along the line between the beginning and the end.
+            The default is None.
+        cut_edges : bool, optional
+            Specify whether to only sample where the line intersects with the bounding
+            box of the VoxelModel. If True, parts of the line that are outside removed.
+
+        Raises
+        ------
+        ValueError
+            If both or none of dist and nsamples are specified.
+
+        Returns
+        -------
+        ds_sel : xr.Dataset or xr.DataArray
+            2D Xarray Dataset with the VoxelModel variables with new dimension 'dist'
+            for distance.
+
+        """
+        if cut_edges:
+            bbox = box(*self.bounds)
+            line = line.intersection(bbox)
+
+        section = sample_along_line(self.ds, line, dist, nsamples, cut_edges)
+        return section
+
+    def select_surface_level(self):
+        surface_idx = self.get_surface_level_mask()
+        return self['z'][surface_idx] + (0.5*self.dz)
 
 
 class Mapping(Spatial):
