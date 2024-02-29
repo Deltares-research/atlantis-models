@@ -448,7 +448,7 @@ class VoxelModel(Raster):
             bbox = box(*self.bounds)
             line = line.intersection(bbox)
 
-        section = sample_along_line(self.ds, line, dist, nsamples, cut_edges)
+        section = sample_along_line(self.ds, line, dist, nsamples)
         return section
 
     def select_surface_level(self):
