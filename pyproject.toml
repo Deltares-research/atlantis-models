@@ -5,6 +5,60 @@ requires = [
 ]
 build-backend = "setuptools.build_meta"
 
+[project]
+name = "atmod"
+version = "0.1.0"
+authors = [
+    {name = "Bas Knaake", email = "bas.knaake@deltares.nl"}
+]
+description = "Easy workflow to build subsurface models for Atlantis subsurface modelling"
+readme = "README.md"
+license = {file = "LICENSE"}
+classifiers = [
+    "evelopment Status :: 2 - Pre-Alpha",
+    "Intended Audience :: Science/Research/Consultans",
+    "Topic :: Scientific/Engineering :: Geology",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3.11",
+    "Topic :: Scientific/Engineering",
+]
+requires-python = ">=3.10, <3.12"
+dependencies = [
+    "numpy <=1.24", # numba requirement
+    "pandas >=2.0.1",
+    "pyarrow",
+    "pyproj",
+	"geopandas",
+    "openpyxl",
+    "shapely >=2.0.1",
+    "rasterio",
+	"xarray",
+    "rioxarray",
+	"dask",
+	"numba",
+	"owslib",
+    "netcdf4",
+    "h5netcdf",
+    "matplotlib",
+]
+
+[project.optional-dependencies]
+dev = [
+    "black",
+    "pytest",
+    "pytest-cov",
+    "ruff",
+    "sphinx",
+    "sphinx-rtd-theme",
+]
+
+[project.urls]
+Homepage = "https://gitlab.com/deltares/tgg-projects/atlantis_models.git"
+Repository = "https://gitlab.com/deltares/tgg-projects/atlantis_models.git"
+Issues = "https://gitlab.com/deltares/tgg-projects/atlantis_models/-/issues"
+
 [tool.pytest.ini_options]
 testpaths = [
     "tests",
