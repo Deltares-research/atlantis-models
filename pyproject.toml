@@ -68,6 +68,9 @@ markers = [
 	"integrationtest: test of multiple components",
 ]
 
+[tool.setuptools]
+packages = ["atmod"]
+
 [tool.black]
 line-length = 88
 skip-string-normalization = true
