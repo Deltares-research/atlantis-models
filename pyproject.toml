@@ -68,8 +68,8 @@ markers = [
 	"integrationtest: test of multiple components",
 ]
 
-[tool.setuptools]
-packages = ["atmod"]
+[tool.setuptools.packages.find]
+include = ["atmod", "atmod.*"]
 
 [tool.black]
 line-length = 88
