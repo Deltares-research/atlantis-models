@@ -1,7 +1,7 @@
 import numpy as np
 import xarray as xr
 from pathlib import WindowsPath
-from typing import Union, TypeVar
+from typing import TypeVar
 from atmod.base import VoxelModel
 from atmod.utils import _follow_gdal_conventions, get_crs_object
 
@@ -12,19 +12,19 @@ class GeoTop(VoxelModel):
     @classmethod
     def from_netcdf(
         cls,
-        nc_path: Union[str, WindowsPath],
+        nc_path: str | WindowsPath,
         data_vars: ArrayLike = None,
         bbox: tuple = None,
         lazy: bool = True,
-        **xr_kwargs
-        ):
+        **xr_kwargs,
+    ):
         """
         Read the BRO GeoTop subsurface model from a netcdf dataset into a GeoTop
         VoxelModel instance. GeoTop can be downloaded from: https://dinodata.nl/opendap.
 
         Parameters
         ----------
-        nc_path : Union[str, WindowsPath]
+        nc_path : str | WindowsPath
             Path to the netcdf file of GeoTop.
         data_vars : ArrayLike
             List or array-like object specifying which data variables to return.
@@ -100,19 +100,19 @@ class Nl3d(VoxelModel):
     @classmethod
     def from_netcdf(
         cls,
-        nc_path: Union[str, WindowsPath],
+        nc_path: str | WindowsPath,
         data_vars: ArrayLike = None,
         bbox: tuple = None,
         lazy: bool = True,
-        **xr_kwargs
-        ):
+        **xr_kwargs,
+    ):
         """
         Read the NL3D subsurface model from a netcdf dataset into a Nl3d VoxelModel
         instance. NL3D can be downloaded from: https://dinodata.nl/opendap.
 
         Parameters
         ----------
-        nc_path : Union[str, WindowsPath]
+        nc_path : str | WindowsPath
             Path to the netcdf file of NL3D.
         data_vars : ArrayLike
             List or array-like object specifying which data variables to return.

@@ -2,16 +2,16 @@ import sqlite3
 import numpy as np
 import xarray as xr
 from pathlib import WindowsPath
-from sqlite3 import Error
-from typing import Union, TypeVar
+from typing import TypeVar
 from rasterio.crs import CRS
 
 
 Raster = TypeVar('Raster')
 VoxelModel = TypeVar('VoxelModel')
+LineString = TypeVar('LineString')
 
 
-def create_connection(database: Union[str, WindowsPath]):
+def create_connection(database: str | WindowsPath):
     """
     Create a database connection to an SQLite database.
 
@@ -29,27 +29,25 @@ def create_connection(database: Union[str, WindowsPath]):
     conn = None
     try:
         conn = sqlite3.connect(database)
-    except Error as e:
+    except sqlite3.Error as e:
         print(e)
 
     return conn
 
 
-def get_xcoordinates(xllcenter: Union[int, float], ncols: int, cellsize: int):
+def get_xcoordinates(xllcenter: int | float, ncols: int, cellsize: int):
     xmin = xllcenter
     xmax = xmin + (ncols * cellsize)
     return np.arange(xmin, xmax, cellsize)
 
 
-def get_ycoordinates(yllcenter: Union[int, float], nrows: int, cellsize: int):
+def get_ycoordinates(yllcenter: int | float, nrows: int, cellsize: int):
     ymin = yllcenter - cellsize  # subtract cellsize to include in descending np.arange
     ymax = ymin + (nrows * cellsize)
     return np.arange(ymax, ymin, -cellsize)
 
 
-def get_zcoordinates(
-    zmin: Union[int, float], zmax: Union[int, float], dz: Union[int, float]
-):
+def get_zcoordinates(zmin: int | float, zmax: int | float, dz: int | float):
     return np.arange(zmin, zmax + dz, dz)
 
 
@@ -65,7 +63,7 @@ def _follow_gdal_conventions(ds):
     return ds
 
 
-def get_crs_object(crs: Union[str, int, CRS]):
+def get_crs_object(crs: str | int | CRS):
     if isinstance(crs, str):
         crs = CRS.from_string(crs)
     elif isinstance(crs, int):
@@ -94,7 +92,12 @@ def _interpolate_point(line, loc):
     return loc, p.x, p.y
 
 
-def sample_along_line(ds, line, dist=None, nsamples=None):
+def sample_along_line(
+    ds: xr.Dataset | xr.DataArray,
+    line: LineString,
+    dist: int | float = None,
+    nsamples: int = None,
+):
     """
     Sample x and y dims of an Xarray Dataset or DataArray over distance along a
     Shapely LineString object. Sampling can be done using a specified distance
@@ -126,9 +129,7 @@ def sample_along_line(ds, line, dist=None, nsamples=None):
 
     """
     if dist and nsamples:
-        raise ValueError(
-            "Cannot use 'dist' and 'nsamples' together, use one option."
-            )
+        raise ValueError("Cannot use 'dist' and 'nsamples' together, use one option.")
 
     elif dist:
         sample_locs = np.arange(0, line.length, dist)
@@ -137,17 +138,13 @@ def sample_along_line(ds, line, dist=None, nsamples=None):
         sample_locs = np.linspace(0, line.length, nsamples)
 
     else:
-        raise ValueError(
-            "'dist' or 'nsamples' not specified, use one option."
-            )
+        raise ValueError("'dist' or 'nsamples' not specified, use one option.")
 
     samplepoints = np.array([_interpolate_point(line, loc) for loc in sample_locs])
     dist, x, y = samplepoints[:, 0], samplepoints[:, 1], samplepoints[:, 2]
 
     ds_sel = ds.sel(
-        x=xr.DataArray(x, dims='dist'),
-        y=xr.DataArray(y, dims='dist'),
-        method='nearest'
+        x=xr.DataArray(x, dims='dist'), y=xr.DataArray(y, dims='dist'), method='nearest'
     )
     ds_sel = ds_sel.assign_coords(dist=('dist', dist))
 
@@ -155,11 +152,11 @@ def sample_along_line(ds, line, dist=None, nsamples=None):
 
 
 def divide_blocks(
-        area: Union[Raster, VoxelModel],
-        ysize: int = None,
-        xsize: int = None,
-        real_units: bool = False
-        ):
+    area: Raster | VoxelModel,
+    ysize: int = None,
+    xsize: int = None,
+    real_units: bool = False,
+):
     """
     Divide the area of a Raster or VoxelModel object into equal blocks of a specified
     'y' and 'x' size and get the bounding boxes of each block. Blocks are created
@@ -167,7 +164,7 @@ def divide_blocks(
 
     Parameters
     ----------
-    area : Union[Raster, VoxelModel]
+    area : Raster | VoxelModel
         Raster or VoxelModel object to divide into blocks.
     ysize, xsize : int, optional
         Block size in y and x direction respectively. The default is None

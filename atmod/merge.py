@@ -1,7 +1,6 @@
 import numba
 import numpy as np
 import xarray as xr
-from typing import Union
 from atmod.base import Raster, VoxelModel
 from atmod.bro_models.geology import Lithology
 from atmod.templates import get_full_like

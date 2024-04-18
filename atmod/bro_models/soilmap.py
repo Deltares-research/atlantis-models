@@ -74,14 +74,14 @@ class BroBodemKaart(Mapping):
         self.soilarea_soilunit_characteristics_bot = BodemKaartLayers.SOILAREA_SOILUNIT_SOILCHARACTERISTICSBOTTOMLAYER  # noqa: E501
 
     @classmethod
-    def from_geopackage(cls, gpkg_path: Union[str, WindowsPath], **gpd_kwargs):
+    def from_geopackage(cls, gpkg_path: str | WindowsPath, **gpd_kwargs):
         """
         Read the geopackage of the BRO Bodemkaart with a working sqlite3 connection
         to all the layers in the geopackage.
 
         Parameters
         ----------
-        gpkg_path : Union[str, WindowsPath]
+        gpkg_path : str | WindowsPath
             Path to the geopackage.
         **gpd_kwargs
             See geopandas.read_file documentation.

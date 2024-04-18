@@ -3,7 +3,6 @@ import numpy as np
 import xarray as xr
 from pathlib import WindowsPath
 from rasterio import features
-from typing import Union
 
 from atmod.base import Raster, VoxelModel
 
@@ -16,9 +15,9 @@ def soilmap_to_raster(soilmap, da) -> Raster:
 
 
 def rasterize_like(
-    shapefile: Union[str, WindowsPath, gpd.GeoDataFrame],
+    shapefile: str | WindowsPath | gpd.GeoDataFrame,
     attribute: str,
-    da: Union[Raster, VoxelModel],
+    da: Raster | VoxelModel,
 ):
     """
     Rasterize a shapefile like an atmod Raster or into the 2D extent of a VoxelModel
@@ -26,12 +25,12 @@ def rasterize_like(
 
     Parameters
     ----------
-    shapefile : Union[str, WindowsPath, gpd.GeoDataFrame]
+    shapefile : str | WindowsPath | gpd.GeoDataFrame
         Input shapefile to rasterize. Can be a path to the shapefile or an in
         memory GeoDataFrame.
     attribute : str
         Name of the attribute in the shapefile to rasterize.
-    da : Union[Raster, VoxelModel]
+    da : Raster | VoxelModel,
         Atmod Raster or VoxelModel object to rasterize the shapefile like.
     cellsize : int, optional
         Cellsize of the output DataArray. The default is None, then the x and y

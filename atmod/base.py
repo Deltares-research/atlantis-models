@@ -4,25 +4,25 @@ import rioxarray as rio
 import xarray as xr
 from abc import ABC, abstractmethod
 from pathlib import WindowsPath
-from typing import Union, Optional
+from typing import Optional
 from rasterio.crs import CRS
 from rasterio.enums import Resampling
 from shapely.geometry import box
 
-from atmod.utils import sample_along_line
+from atmod.utils import sample_along_line, LineString
 
 
 class AtlansParameters:
     def __init__(
         self,
-        modelbase: Union[int, float] = -30,
-        mass_fraction_organic: Union[int, float] = 0.5,
-        mass_fraction_lutum: Union[int, float] = 0.5,
-        rho_bulk: Union[int, float] = 833.0,
-        shrinkage_degree: Union[int, float] = 0.7,
-        max_oxidation_depth: Union[int, float] = 1.2,
-        no_oxidation_thickness: Union[int, float] = 0.3,
-        no_shrinkage_thickness: Union[int, float] = 0.0,
+        modelbase: int | float = -30,
+        mass_fraction_organic: int | float = 0.5,
+        mass_fraction_lutum: int | float = 0.5,
+        rho_bulk: int | float = 833.0,
+        shrinkage_degree: int | float = 0.7,
+        max_oxidation_depth: int | float = 1.2,
+        no_oxidation_thickness: int | float = 0.3,
+        no_shrinkage_thickness: int | float = 0.0,
     ):
         self.modelbase = float(modelbase)
         self.mass_fraction_organic = float(mass_fraction_organic)
@@ -83,8 +83,8 @@ class Raster(Spatial):
     def __init__(
         self,
         ds: xr.DataArray,
-        cellsize: Union[int, float],
-        crs: Union[str, int, CRS] = None,
+        cellsize: int | float,
+        crs: str | int | CRS = None,
     ):
         self.ds = ds
         self.cellsize = cellsize
@@ -211,7 +211,7 @@ class Raster(Spatial):
 
     def set_cellsize(
         self,
-        cellsize: Union[int, float],
+        cellsize: int | float,
         resampling_method=Resampling.bilinear,
         inplace=False,
     ):
@@ -228,7 +228,7 @@ class Raster(Spatial):
         else:
             return self.__class__(ds_resampled, cellsize, self.crs)
 
-    def set_crs(self, crs: Union[str, int, CRS]):
+    def set_crs(self, crs: str | int | CRS):
         self.ds.rio.write_crs(crs, inplace=True)
 
     def to_raster(self, outputpath, **rio_kwargs):
@@ -239,9 +239,9 @@ class VoxelModel(Raster):
     def __init__(
         self,
         ds: xr.Dataset,
-        cellsize: Union[int, float],
-        dz: Union[int, float],
-        epsg: Union[str, int, CRS] = None,
+        cellsize: int | float,
+        dz: int | float,
+        epsg: str | int | CRS = None,
     ):
         Raster.__init__(self, ds, cellsize, None)
         self.dz = dz
@@ -305,7 +305,7 @@ class VoxelModel(Raster):
         ds['z'] = ds['z'] + (dz / 2)
         return ds
 
-    def drop_vars(self, data_vars: Union[str, list], inplace=True):
+    def drop_vars(self, data_vars: str | list, inplace: bool = True):
         if inplace:
             self.ds = self.ds.drop_vars(data_vars)
         else:
@@ -325,9 +325,7 @@ class VoxelModel(Raster):
         }
         return meta
 
-    def zslice_to_tiff(
-        self, layer: str, z: Union[int, float], outputpath: Union[str, WindowsPath]
-    ):
+    def zslice_to_tiff(self, layer: str, z: int | float, outputpath: str | WindowsPath):
         zslice = self.ds[layer].sel(z=z, method='nearest')
 
         if not self.x_ascending:
@@ -412,7 +410,13 @@ class VoxelModel(Raster):
 
         return Raster(bottom, self.cellsize, self.crs)
 
-    def select_with_line(self, line, dist=None, nsamples=None, cut_edges=True):
+    def select_with_line(
+        self,
+        line: LineString,
+        dist: int | float = None,
+        nsamples: int = None,
+        cut_edges: bool = True,
+    ):
         """
         Use a Shapely LineString to select data along the x and y dims of the VoxelModel
         for the creation of cross-sections. Sampling can be done using a specified dist-

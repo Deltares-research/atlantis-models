@@ -1,6 +1,6 @@
 import numpy as np
 import xarray as xr
-from typing import Union, TypeVar
+from typing import TypeVar
 
 from atmod.base import Raster, VoxelModel, Mapping, AtlansParameters, AtlansStrat
 from atmod.merge import combine_data_sources
@@ -17,7 +17,7 @@ from atmod.warnings import suppress_warnings
 BodemKaartDicts = TypeVar('BodemKaartDicts')
 
 
-def get_2d_template_like(model: Union[Raster, VoxelModel]) -> Raster:
+def get_2d_template_like(model: Raster | VoxelModel) -> Raster:
     xmin_center = model.xmin + (0.5 * model.cellsize)
     ymin_center = model.ymin + (0.5 * model.cellsize)
 
