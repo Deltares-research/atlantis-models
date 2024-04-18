@@ -6,10 +6,22 @@ from atmod.bro_models.geology import Lithology
 from atmod.templates import get_full_like
 
 
-def combine_data_sources(ahn, geotop, nl3d, soilmap, soilmap_dicts, parameters):
-    voxelmodel = combine_geotop_nl3d(geotop, nl3d)
+def combine_data_sources(
+    ahn, geotop, parameters, nl3d=None, soilmap=None, soilmap_dicts=None
+):
+    if nl3d is not None:
+        voxelmodel = combine_geotop_nl3d(geotop, nl3d)
+    else:
+        voxelmodel = geotop
 
-    voxelmodel = _mask_depth(voxelmodel, parameters.modelbase) # _mask_depth not as a class function because selection is too specific  # noqa: E501
+    voxelmodel = _mask_depth(
+        voxelmodel, parameters.modelbase
+    )  # _mask_depth not as a class function because selection is too specific  # noqa: E501
+
+    if soilmap is None:
+        soilmap_values = np.zeros(ahn.shape, dtype='int16')
+    else:
+        soilmap_values = soilmap.ds.values
 
     thickness = get_full_like(voxelmodel, 0.5, np.nan)
     geology = voxelmodel['strat'].values
@@ -23,7 +35,7 @@ def combine_data_sources(ahn, geotop, nl3d, soilmap, soilmap_dicts, parameters):
         geology,
         lithoclass,
         mass_organic,
-        soilmap.ds.values,
+        soilmap_values,
         soilmap_dicts.thickness,
         soilmap_dicts.lithology,
         soilmap_dicts.organic,
@@ -110,7 +122,7 @@ def combine_voxels_and_soilmap(
                     voxel_geology,
                     voxel_lithology,
                     voxel_organic,
-                    surface_difference
+                    surface_difference,
                 )
 
             elif soilnr == no_soil_map or _top_is_anthropogenic(voxel_lithology):
@@ -160,7 +172,7 @@ def _fill_anthropogenic(thickness, geology, lithology, organic, difference):
     idx_to_fill = _get_top_voxel_idx(thickness) + 1
 
     thickness[idx_to_fill] = difference
-    geology[idx_to_fill] = geology[idx_to_fill-1]
+    geology[idx_to_fill] = geology[idx_to_fill - 1]
     lithology[idx_to_fill] = anthropogenic
     organic[idx_to_fill] = anthropogenic
     return thickness, geology, lithology, organic
@@ -168,12 +180,7 @@ def _fill_anthropogenic(thickness, geology, lithology, organic, difference):
 
 @numba.njit
 def _shift_voxel_surface_down(
-    thickness,
-    geology,
-    lithology,
-    organic,
-    surface,
-    modelbase
+    thickness, geology, lithology, organic, surface, modelbase
 ):
     depth_voxels = modelbase + np.cumsum(thickness)
 
@@ -230,11 +237,13 @@ def _combine_with_soilprofile(
 
     split_idx = np.argmax(depth_voxels > split_elevation)
 
-    if split_idx == 0: # Bottom of soilprofile is above the highest voxel.
+    if split_idx == 0:  # Bottom of soilprofile is above the highest voxel.
         split_idx = np.argmax(depth_voxels)
 
         surface_voxels = np.nanmax(depth_voxels)
-        if surface_voxels < split_elevation: # fill with voxel if there is 'empty space'
+        if (
+            surface_voxels < split_elevation
+        ):  # fill with voxel if there is 'empty space'
             geology[split_idx] = geology[split_idx - 1]
             lithology[split_idx] = lithology[split_idx - 1]
             organic[split_idx] = organic[split_idx - 1]

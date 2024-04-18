@@ -5,7 +5,7 @@ from typing import TypeVar
 from atmod.base import Raster, VoxelModel, Mapping, AtlansParameters, AtlansStrat
 from atmod.merge import combine_data_sources
 from atmod.preprocessing import (
-    get_numba_mapping_dicts_from,
+    NumbaDicts,
     soilmap_to_raster,
     map_geotop_strat,
     map_nl3d_strat,
@@ -61,52 +61,67 @@ def create_atlantis_variables(voxelmodel, parameters, glg=None):
 
 def build_atlantis_model(
     ahn: Raster,
-    geotop: VoxelModel,
-    nl3d: VoxelModel,
-    bodemkaart: Mapping,
-    parameters: AtlansParameters,
+    geotop: VoxelModel,  # TODO: Also make input for geotop optional
+    nl3d: VoxelModel = None,
+    bodemkaart: Mapping = None,
     glg: Raster = None,
+    parameters: AtlansParameters = None,
 ):
     """
-    Workflow to create a 3D subsurface model as input for Atlantis subsurface
-    modelling.
+    Create a 3D subsurface model that can be used as input for subsidence modelling in
+    Atlantis Julia. A minimal subsurface model combines AHN (Algemeen Hoogtebestand
+    Nederland) with the GeoTOP 3D voxelmodel. For a more detailed model or for areas
+    where GeoTOP is unavailable, the BRO Bodemkaart and the NL3D 3D voxelmodel can be
+    included. When the BRO Bodemkaart is included, the top 1.2 m below the surface level
+    is replaced by the buildup as specified in the Bodemkaart.
 
     Parameters
     ----------
     ahn : Raster
-        _description_
+        Raster instance with the AHN data to use for the surface level for the area
+        where the model is created for.
     geotop : VoxelModel
-        _description_
-    nl3d : VoxelModel
-        _description_
-    bodemkaart : Mapping
-        _description_
-    parameters : AtlansParameters
-        _description_
-    glg : Raster
-        _description_
+        VoxelModel instance with the GeoTOP 3D voxelmodel data. See atmod.bro_models.GeoTop.
+    bodemkaart : Mapping, optional
+        Mapping instance containing the BRO Bodemkaart data. See atmod.bro_models.BroBodemKaart.
+        The default is None.
+    glg : Raster, optional
+        Optional Raster instance with the GLG data to use for the phreatic level for the area
+        where the model is created for. The default is None, then the GLG needs to be added
+        manually because a phreatic level is mandatory input for an Atlantis subsurface model.
+    parameters : AtlansParameters, optional
+        Optional parameter class to specify default parameters for variables to use in the
+        model. The default is None, then all Atlantis defaults will be used for each parameter.
 
     Returns
     -------
     xr.Dataset
-        _description_
+        Xarray Dataset with the required input variables for an Atlantis subsurface model
+        (N.B. mind the optional GLG input) that can be stored as a Netcdf.
 
-    """
-    soilmap_dicts = get_numba_mapping_dicts_from(bodemkaart)
-    soilmap = soilmap_to_raster(bodemkaart, ahn)
+    """  # noqa: E501
+    if bodemkaart is not None:
+        soilmap_dicts = NumbaDicts.from_soilmap(bodemkaart)
+        soilmap = soilmap_to_raster(bodemkaart, ahn)
+    else:
+        soilmap_dicts = NumbaDicts.empty()
+        soilmap = None
 
     geotop = map_geotop_strat(geotop)
-    nl3d = map_nl3d_strat(nl3d)
+
+    if nl3d is not None:
+        nl3d = map_nl3d_strat(nl3d)
+
+    if parameters is None:
+        parameters = AtlansParameters()  # use all defaults
 
     voxelmodel = combine_data_sources(
-        ahn, geotop, nl3d, soilmap, soilmap_dicts, parameters
+        ahn, geotop, parameters, nl3d, soilmap, soilmap_dicts
     )
     voxelmodel = create_atlantis_variables(voxelmodel, parameters, glg)
 
     voxelmodel = voxelmodel.ds
-    voxelmodel = voxelmodel.rename(
-        {'z': 'layer'}
-    )  # With renamed dimension it is no longer a vald atmod.VoxelModel  # noqa: E501
+    voxelmodel = voxelmodel.rename({'z': 'layer'})  # No longer a vald atmod.VoxelModel
     voxelmodel['layer'] = np.arange(len(voxelmodel['layer'])) + 1
 
     return voxelmodel

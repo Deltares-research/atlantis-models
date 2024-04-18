@@ -6,6 +6,12 @@ from atmod.bro_models import BroBodemKaart, Lithology
 from atmod.warnings import suppress_warnings
 
 
+EMPTYDICT = numba.typed.Dict.empty(
+    key_type=numba.types.int16,
+    value_type=numba.types.float32[:],
+)
+
+
 @dataclass(repr=False)
 class NumbaDicts:
     thickness: numba.typed.typeddict.Dict
@@ -16,6 +22,74 @@ class NumbaDicts:
     def __repr__(self):
         keys = list(self.__dict__.keys())
         return f'NumbaDicts instance of typical soilprofiles:\n\tAttributes: {keys}'
+
+    @classmethod
+    @suppress_warnings(numba.NumbaTypeSafetyWarning)
+    def from_soilmap(cls, soilmap, ascending_depth=True):
+        """
+        Generate Numba compatible dictionaries from the BRO Bodemkaart of layer, thickness,
+        lithology and organic matter fraction for typical soilprofiles. The dictionaries
+        map soilprofile id's to arrays of the soilprofile characteristics. The dictionaries
+        are used to combine the Bodemkaart with the GeoTOP subsurface model of DINO-TNO.
+
+        Parameters
+        ----------
+        soilmap : atmod.bro_models.BroBodemKaart
+            Instance of the BRO bodemkaart from: https://www.broloket.nl/ondergrondmodellen.
+        ascending_depth : bool, optional
+            If True, the arrays of the soilprofiles in the dictionary will be ordered
+            from top to bottom (i.e. depth ascending), the default is True.
+
+        Returns
+        -------
+        NumbaDicts
+            Dataclass containing numba dictionaries of thickness, lithology and organic
+            matter.
+
+        """
+        lithology = EMPTYDICT
+        thickness = EMPTYDICT
+        organic = EMPTYDICT
+        lutum = EMPTYDICT
+
+        mapping_table = get_bodemkaart_mapping_table(soilmap)
+        mapping_table['nr'] = (
+            mapping_table['nr'].str.split('.', expand=True)[2].astype(int)
+        )
+
+        to_fraction = 100
+        for nr, df in mapping_table.groupby('nr'):
+            lith = cls._get_values(df['lithology'], ascending_depth)
+            thick = cls._get_values(df['thickness'], ascending_depth)
+            org = cls._get_values(df['orgmatter'] / to_fraction, ascending_depth)
+            lut = cls._get_values(df['lutum'] / to_fraction, ascending_depth)
+
+            lithology[nr] = np.float32(lith)
+            thickness[nr] = np.float32(thick)
+            organic[nr] = np.float32(org)
+            lutum[nr] = np.float32(lut)
+
+        return cls(thickness, lithology, organic, lutum)
+
+    @classmethod
+    def empty(cls):
+        """
+        Return an instance with all empty dictionaries.
+
+        """
+        return cls(EMPTYDICT, EMPTYDICT, EMPTYDICT, EMPTYDICT)
+
+    @staticmethod
+    def _get_values(series, ascending_depth=True):
+        """
+        Helper function for get_numba_mapping_dicts_from.
+
+        """
+        if ascending_depth:
+            values = series.values[::-1]
+        else:
+            values = series.values
+        return values
 
 
 def determine_geotop_lithology_from(soiltable: pd.DataFrame) -> np.array:
@@ -136,76 +210,3 @@ def get_bodemkaart_mapping_table(soilmap) -> pd.DataFrame:
     )
 
     return mapping_table
-
-
-def __get_values(series, ascending_depth=True):
-    """
-    Helper function for get_numba_mapping_dicts_from.
-
-    """
-    if ascending_depth:
-        values = series.values[::-1]
-    else:
-        values = series.values
-    return values
-
-
-@suppress_warnings(numba.NumbaTypeSafetyWarning)
-def get_numba_mapping_dicts_from(soilmap, ascending_depth=True):
-    """
-    Generate Numba compatible dictionaries from the BRO Bodemkaart of layer, thickness,
-    lithology and organic matter fraction for typical soilprofiles. The dictionaries
-    map soilprofile id's to arrays of the soilprofile characteristics. The dictionaries
-    are used to combine the Bodemkaart with the GeoTOP subsurface model of DINO-TNO.
-
-    Parameters
-    ----------
-    soilmap : atmod.bro_models.BroBodemKaart
-        Instance of the BRO bodemkaart from: https://www.broloket.nl/ondergrondmodellen.
-    ascending_depth : bool, optional
-        If True, the arrays of the soilprofiles in the dictionary will be ordered
-        from top to bottom (i.e. depth ascending), the default is True.
-
-    Returns
-    -------
-    NumbaDicts
-        Dataclass containing numba dictionaries of thickness, lithology and organic
-        matter.
-
-    """
-    lithology = numba.typed.Dict.empty(
-        key_type=numba.types.int16,
-        value_type=numba.types.float32[:],
-    )
-
-    thickness = numba.typed.Dict.empty(
-        key_type=numba.types.int16,
-        value_type=numba.types.float32[:],
-    )
-
-    organic = numba.typed.Dict.empty(
-        key_type=numba.types.int16,
-        value_type=numba.types.float32[:],
-    )
-
-    lutum = numba.typed.Dict.empty(
-        key_type=numba.types.int16,
-        value_type=numba.types.float32[:],
-    )
-
-    mapping_table = get_bodemkaart_mapping_table(soilmap)
-    mapping_table['nr'] = mapping_table['nr'].str.split('.', expand=True)[2].astype(int)
-
-    to_fraction = 100
-    for nr, df in mapping_table.groupby('nr'):
-        lith = __get_values(df['lithology'], ascending_depth)
-        thick = __get_values(df['thickness'], ascending_depth)
-        org = __get_values(df['orgmatter'] / to_fraction, ascending_depth)
-        lut = __get_values(df['lutum'] / to_fraction, ascending_depth)
-
-        lithology[nr] = np.float32(lith)
-        thickness[nr] = np.float32(thick)
-        organic[nr] = np.float32(org)
-        lutum[nr] = np.float32(lut)
-
-    return NumbaDicts(thickness, lithology, organic, lutum)
