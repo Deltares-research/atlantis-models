@@ -39,6 +39,7 @@ class GeoTop(VoxelModel):
         -------
         GeoTop
             GeoTop instance of the netcdf file.
+
         """
         cellsize = 100
         dz = 0.5
@@ -62,38 +63,40 @@ class GeoTop(VoxelModel):
         return cls(ds, cellsize, dz, crs)
 
     @classmethod
-    def from_opendap(cls, url, bbox: tuple, data_vars: ArrayLike = None):
+    def from_opendap(
+        cls,
+        url: str = r'https://dinodata.nl/opendap/GeoTOP/geotop.nc',
+        data_vars: ArrayLike = None,
+        bbox: tuple = None,
+        lazy: bool = True,
+        **xr_kwargs,
+    ):
         """
-        Download a small area of GeoTop from the OPeNDAP data server.
+        Download an area of GeoTop directly from the OPeNDAP data server into a GeoTop
+        VoxelModel instance.
 
         Parameters
         ----------
         url : str
             Url to the netcdf file on the OPeNDAP server. See:
             https://www.dinoloket.nl/modelbestanden-aanvragen
-        bbox : tuple
-            xmin, ymin, xmax, ymax Rijksdriehoekstelsel coordinates of the area
-            to download GeoTop for. (TODO: find max downloadsize for server)
+        data_vars : ArrayLike
+            List or array-like object specifying which data variables to return.
+        bbox : tuple, optional
+            Enter a tuple (xmin, ymin, xmax, ymax) to return a selected area of GeoTop.
+            The default is None but for practical reasons, specifying a bounding box is
+            advised (TODO: find max downloadsize for server).
+        lazy : bool, optional
+            If True, netcdf loads lazily. Use False for speed improvements for larger
+            areas but that still fit into memory. The default is False.
 
         Returns
         -------
-        xr.Dataset
-            GeoTop subsurface model for the requested area.
+        GeoTop
+            GeoTop instance for the selected area.
+
         """
-        cellsize = 100
-        dz = 0.5
-        crs = 28992
-
-        xmin, ymin, xmax, ymax = bbox
-        ds = xr.open_dataset(url, chunks={'y': 200, 'x': 200})
-        ds = cls.coordinates_to_cellcenters(ds, cellsize, dz)
-        ds = ds.sel(x=slice(xmin, xmax), y=slice(ymin, ymax))
-        ds = _follow_gdal_conventions(ds)
-
-        if data_vars is not None:
-            ds = ds[data_vars]
-
-        return cls(ds, cellsize, dz, crs)
+        return cls.from_netcdf(url, data_vars, bbox, lazy, **xr_kwargs)
 
 
 class Nl3d(VoxelModel):
@@ -127,6 +130,7 @@ class Nl3d(VoxelModel):
         -------
         Nl3d
             Nl3d instance of the netcdf file.
+
         """
         cellsize = 250
         dz = 1.0
