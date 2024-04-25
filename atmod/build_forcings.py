@@ -5,31 +5,35 @@ from atmod.base import Raster, VoxelModel
 
 
 def surcharge_like(
-    ds: Raster | VoxelModel | xr.Dataset | xr.DataArray,
+    other: Raster | VoxelModel | xr.Dataset | xr.DataArray,
     lithology: int | np.ndarray,
     thickness: float | np.ndarray,
     times: np.datetime64 | np.ndarray,
 ):
     """
-    _summary_
+    Create an Xarray Dataset for the Atlantis surcharge forcing based on the y,x extent
+    of an input model like object. The surcharge dataset that is created contains the
+    lithological profile with corresponding thicknesses in each y,x cell for the complete
+    dataset.
 
     Parameters
     ----------
-    ds : Raster | VoxelModel | xr.Dataset | xr.DataArray
-        _description_
+    other : Raster | VoxelModel | xr.Dataset | xr.DataArray
+        Input to base the y and x dimensions on for the surcharge dataset to create.
     lithology : int | np.array
-        _description_
+        Lithological profile or single cell to add as a surcharge.
     thickness : float | np.array
-        _description_
+        Corresponding thickness to each lithology.
     times : np.datetime64 | np.array
-        _description_
+        Times at which the surcharge must be added.
 
     Returns
     -------
-    _type_
-        _description_
+    xr.Dataset
+        Surcharge dataset.
+
     """
-    xshape, yshape = len(ds['x']), len(ds['y'])
+    xshape, yshape = len(other['x']), len(other['y'])
 
     times, ntimes = _get_dim_input(times.astype('datetime64[ns]'))
     lithology, nlayers = _get_dim_input(lithology)
@@ -51,8 +55,8 @@ def surcharge_like(
     coords = dict(
         time=(['time'], times),
         layer=(['layer'], layers),
-        y=(['y'], ds['y'].values),
-        x=(['x'], ds['x'].values),
+        y=(['y'], other['y'].values),
+        x=(['x'], other['x'].values),
     )
 
     return xr.Dataset(data, coords)
