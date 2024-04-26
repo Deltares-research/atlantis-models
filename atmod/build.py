@@ -42,13 +42,13 @@ def create_atlantis_variables(voxelmodel, parameters, glg=None):
     voxelmodel['zbase'] = xr.full_like(voxelmodel['surface'], parameters.modelbase)
 
     voxelmodel['max_oxidation_depth'] = xr.full_like(
-        voxelmodel['surface'], parameters.max_oxidation_depth
+        voxelmodel['surface_level'], parameters.max_oxidation_depth
     )
     voxelmodel['no_oxidation_thickness'] = xr.full_like(
-        voxelmodel['surface'], parameters.no_oxidation_thickness
+        voxelmodel['surface_level'], parameters.no_oxidation_thickness
     )
     voxelmodel['no_shrinkage_thickness'] = xr.full_like(
-        voxelmodel['surface'], parameters.no_shrinkage_thickness
+        voxelmodel['surface_level'], parameters.no_shrinkage_thickness
     )
 
     bottom_holocene = voxelmodel.select_bottom(

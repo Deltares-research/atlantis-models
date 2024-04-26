@@ -14,9 +14,8 @@ def combine_data_sources(
     else:
         voxelmodel = geotop
 
-    voxelmodel = _mask_depth(
-        voxelmodel, parameters.modelbase
-    )  # _mask_depth not as a class function because selection is too specific  # noqa: E501
+    # _mask_depth not as a class function because selection is too specific  # noqa: E501
+    voxelmodel = _mask_depth(voxelmodel, parameters.modelbase)
 
     if soilmap is None:
         soilmap_values = np.zeros(ahn.shape, dtype='int16')
@@ -46,7 +45,7 @@ def combine_data_sources(
     voxelmodel['lithology'] = (('y', 'x', 'z'), lithology)
     voxelmodel['thickness'] = (('y', 'x', 'z'), thickness)
     voxelmodel['mass_fraction_organic'] = (('y', 'x', 'z'), organic)
-    voxelmodel['surface'] = (ahn.dims, ahn.values)
+    voxelmodel['surface_level'] = (ahn.dims, ahn.values)
 
     voxelmodel.drop_vars(['strat', 'lithok'])
     return voxelmodel
