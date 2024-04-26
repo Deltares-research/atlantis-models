@@ -126,4 +126,4 @@ def build_atlantis_model(
     voxelmodel = voxelmodel.rename({'z': 'layer'})  # No longer a vald atmod.VoxelModel
     voxelmodel['layer'] = np.arange(len(voxelmodel['layer'])) + 1
 
-    return voxelmodel
+    return voxelmodel.astype('float64')
