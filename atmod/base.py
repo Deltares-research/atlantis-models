@@ -37,7 +37,7 @@ class AtlansParameters:
         params = [f'{k}: {v}' for k, v in self.__dict__.items()]
         instance = self.__class__.__name__
         params = '\n\t'.join(params)
-        return f'{instance}\n\t{params}'
+        return f'{instance}:\n\t{params}'
 
     @classmethod
     def from_inifile(cls):
