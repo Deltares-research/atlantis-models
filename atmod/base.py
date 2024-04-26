@@ -33,6 +33,12 @@ class AtlansParameters:
         self.no_oxidation_thickness = float(no_oxidation_thickness)
         self.no_shrinkage_thickness = float(no_shrinkage_thickness)
 
+    def __str__(self):
+        params = [f'{k}: {v}' for k, v in self.__dict__.items()]
+        instance = self.__class__.__name__
+        params = '\n\t'.join(params)
+        return f'{instance}\n\t{params}'
+
     @classmethod
     def from_inifile(cls):
         raise NotImplementedError
@@ -93,7 +99,7 @@ class Raster(Spatial):
             self.ds.rio.write_crs(crs)
 
     def __repr__(self):
-        instance = f'atmod.{self.__class__.__name__} instance'
+        instance = f'atmod.{self.__class__.__name__}'
         dimensions = f'Dimensions: {dict(self.ds.sizes)}'
         resolution = f'Resolution (y, x): {self.cellsize, self.cellsize}'
         return f'{instance}\n{dimensions}\n{resolution}'
