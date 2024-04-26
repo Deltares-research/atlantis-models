@@ -32,7 +32,7 @@ def surcharge_like(
     xr.Dataset
         Surcharge dataset.
 
-    """
+    """  # noqa: E501
     xshape, yshape = len(other['x']), len(other['y'])
 
     times, ntimes = _get_dim_input(times.astype('datetime64[ns]'))
@@ -58,6 +58,54 @@ def surcharge_like(
         y=(['y'], other['y'].values),
         x=(['x'], other['x'].values),
     )
+
+    return xr.Dataset(data, coords)
+
+
+def stage_indexation_from(
+    weir_areas: xr.DataArray,
+    like: Raster | VoxelModel | xr.DataArray | xr.Dataset,
+    times: np.datetime64 | np.ndarray,
+    factor: float | np.ndarray,
+):
+    """
+    Create an Xarray Dataset for the Atlantis stage indexation forcing for an input
+    DataArray of weir areas based on the y,x extent of an input model like object and
+    for each time the stage indexation forcing must be applied.
+
+    Parameters
+    ----------
+    weir_areas : xr.DataArray
+        2D DataArray with dims y,x containing weir areas over which stage indexation is
+        calculated.
+    like : Raster | VoxelModel | xr.DataArray | xr.Dataset
+        Input to base the y and x dimensions on for the stage indexation dataset to
+        create.
+    times : np.datetime64 | np.ndarray
+        Times at which the stage indexation must be applied in the modelling.
+    factor : float | np.ndarray
+        Factor of the subsidence by which stage indexation is calculated.
+
+    Returns
+    -------
+    xr.Dataset
+        Stage indexation dataset.
+
+    """
+    weir_areas = weir_areas.sel(x=like['x'], y=like['y'], method='nearest')
+
+    times, ntimes = _get_dim_input(times.astype('datetime64[ns]'))
+    weir_areas = repeat_in_time(weir_areas, ntimes)
+
+    if isinstance(factor, (int, float)):
+        factor = np.full_like(weir_areas, factor, dtype='float64')
+    else:
+        factor = repeat_in_time(factor, ntimes)
+
+    data = dict(
+        weir_area=(['time', 'y', 'x'], weir_areas), factor=(['time', 'y', 'x'], factor)
+    )
+    coords = dict(time=times, y=like['y'], x=like['x'])
 
     return xr.Dataset(data, coords)
 
@@ -106,3 +154,11 @@ def _repeat(array: np.ndarray, ntimes: int, nlayers: int, ny: int, nx: int):
             array[np.newaxis, :, np.newaxis, np.newaxis], (ntimes, 1, ny, nx)
         )
     return array
+
+
+def repeat_in_time(arr, times):
+    """
+    Repeat a 2D array n times along dimension time (axis=0).
+
+    """
+    return np.tile(arr, (times, 1, 1))
