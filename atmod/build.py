@@ -39,7 +39,9 @@ def create_atlantis_variables(voxelmodel, parameters, glg=None):
         voxelmodel['phreatic_level'] = (glg.dims, glg.values)
 
     voxelmodel['rho_bulk'] = _calc_rho_bulk(voxelmodel, parameters)
-    voxelmodel['zbase'] = xr.full_like(voxelmodel['surface'], parameters.modelbase)
+    voxelmodel['zbase'] = xr.full_like(
+        voxelmodel['surface_level'], parameters.modelbase
+    )
 
     voxelmodel['max_oxidation_depth'] = xr.full_like(
         voxelmodel['surface_level'], parameters.max_oxidation_depth
