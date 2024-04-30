@@ -1,7 +1,7 @@
 import numpy as np
 import xarray as xr
 from pathlib import WindowsPath
-from typing import TypeVar
+from typing import TypeVar, Optional
 from atmod.base import VoxelModel
 from atmod.utils import _follow_gdal_conventions, get_crs_object
 
@@ -44,6 +44,9 @@ class GeoTop(VoxelModel):
         cellsize = 100
         dz = 0.5
         crs = 28992
+
+        if lazy and 'chunks' not in xr_kwargs:
+            xr_kwargs['chunks'] = 'auto'
 
         ds = xr.open_dataset(nc_path, **xr_kwargs)
         ds = cls.coordinates_to_cellcenters(ds, cellsize, dz)
@@ -135,6 +138,9 @@ class Nl3d(VoxelModel):
         cellsize = 250
         dz = 1.0
         crs = 28992
+
+        if lazy and 'chunks' not in xr_kwargs:
+            xr_kwargs['chunks'] = 'auto'
 
         ds = xr.open_dataset(nc_path, **xr_kwargs)
         ds = cls.coordinates_to_cellcenters(ds, cellsize, dz)
