@@ -385,6 +385,23 @@ class VoxelModel(Raster):
         idxs[np.all(~da.values, axis=2)] = -1
         return idxs
 
+    def select(self, indexers: Optional[dict] = None, **xr_kwargs):
+        """
+        Return a new object instance whose data is given by selecting index
+        labels along the specified dimension(s).
+
+        Parameters
+        ----------
+        indexers : Optional[dict], optional
+            A dict with keys matching dimensions and values given
+            by scalars, slices or arrays of tick labels. For dimensions with
+            multi-index, the indexer may also be a dict-like object with keys
+            matching index level names.
+
+        """
+        sel = self.ds.sel(indexers, **xr_kwargs)
+        return self.__class__(sel, self.cellsize, self.dz, self.epsg)
+
     def select_like(self, other):
         other_y = other.ycoords
         other_x = other.xcoords
