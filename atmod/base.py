@@ -16,6 +16,7 @@ class AtlansParameters:
     def __init__(
         self,
         modelbase: int | float = -30,
+        modeltop: int | float | str = None,
         mass_fraction_organic: int | float = 0.5,
         mass_fraction_lutum: int | float = 0.5,
         rho_bulk: int | float = 833.0,
@@ -25,6 +26,16 @@ class AtlansParameters:
         no_shrinkage_thickness: int | float = 0.0,
     ):
         self.modelbase = float(modelbase)
+
+        if modeltop == 'infer' or modeltop is None:
+            self.modeltop = modeltop
+        elif isinstance(modeltop, (int, float)):
+            self.modeltop = float(modeltop)
+        else:
+            raise ValueError(
+                'Illegal input for modeltop. Use int or float dtype or "infer".'
+            )
+
         self.mass_fraction_organic = float(mass_fraction_organic)
         self.mass_fraction_lutum = float(mass_fraction_lutum)
         self.rho_bulk = float(rho_bulk)
