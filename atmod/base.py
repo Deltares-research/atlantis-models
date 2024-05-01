@@ -392,7 +392,7 @@ class VoxelModel(Raster):
 
         sel = self.ds.sel(y=other_y, x=other_x, z=other_z, method='nearest')
         sel = sel.assign_coords({'y': other_y, 'x': other_x, 'z': other_z})
-        return self.__class__(sel, other.cellsize, other.dz, other.crs)
+        return self.__class__(sel, other.cellsize, other.dz, other.epsg)
 
     def select_top(self, cond):
         idxs = self._get_indices_2d(cond, which='max')
@@ -403,7 +403,7 @@ class VoxelModel(Raster):
             top, coords={'y': self.ycoords, 'x': self.xcoords}, dims=('y', 'x')
         )
 
-        return Raster(top, self.cellsize, self.crs)
+        return Raster(top, self.cellsize, self.epsg)
 
     def select_bottom(self, cond):
         idxs = self._get_indices_2d(cond, which='min')
@@ -414,7 +414,7 @@ class VoxelModel(Raster):
             bottom, coords={'y': self.ycoords, 'x': self.xcoords}, dims=('y', 'x')
         )
 
-        return Raster(bottom, self.cellsize, self.crs)
+        return Raster(bottom, self.cellsize, self.epsg)
 
     def select_with_line(
         self,
@@ -463,7 +463,11 @@ class VoxelModel(Raster):
 
     def select_surface_level(self):
         surface_idx = self.get_surface_level_mask()
-        return self['z'][surface_idx] + (0.5 * self.dz)
+        surface = (self.zcoords[surface_idx] + (0.5 * self.dz),)
+        surface = xr.DataArray(
+            surface, coords={'y': self.ycoords, 'x': self.xcoords}, dims=('y', 'x')
+        )
+        return Raster(surface, self.cellsize, self.epsg)
 
 
 class Mapping(Spatial):
