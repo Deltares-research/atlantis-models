@@ -463,7 +463,7 @@ class VoxelModel(Raster):
 
     def select_surface_level(self):
         surface_idx = self.get_surface_level_mask()
-        surface = (self.zcoords[surface_idx] + (0.5 * self.dz),)
+        surface = self.zcoords[surface_idx] + (0.5 * self.dz)
         surface = xr.DataArray(
             surface, coords={'y': self.ycoords, 'x': self.xcoords}, dims=('y', 'x')
         )
