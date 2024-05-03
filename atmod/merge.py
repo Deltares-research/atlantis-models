@@ -18,7 +18,7 @@ def combine_data_sources(
     voxelmodel = _mask_depth(voxelmodel, parameters)
 
     if soilmap is None:
-        soilmap_values = np.zeros(ahn.shape, dtype='int16')
+        soilmap_values = np.zeros(ahn.shape, dtype='int64')
     else:
         soilmap_values = soilmap.ds.values
 
@@ -107,7 +107,7 @@ def combine_voxels_and_soilmap(
     modelbase,
 ):
     ysize, xsize = ahn.shape
-    no_soil_map = np.int16(0)
+    no_soil_map = np.int64(0)
     for i in range(ysize):
         for j in range(xsize):
             voxel_thickness = thickness[i, j, :]
@@ -123,7 +123,7 @@ def combine_voxels_and_soilmap(
             if invalid_surface or invalid_voxel_column:
                 continue
 
-            soilnr = np.int16(soilmap[i, j])
+            soilnr = np.int64(soilmap[i, j])
 
             surface_level_voxels = modelbase + np.nansum(voxel_thickness)
             surface_difference = surface - surface_level_voxels

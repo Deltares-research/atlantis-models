@@ -7,7 +7,7 @@ from atmod.warnings import suppress_warnings
 
 
 EMPTYDICT = numba.typed.Dict.empty(
-    key_type=numba.types.int16,
+    key_type=numba.types.int64,
     value_type=numba.types.float64[:],
 )
 
@@ -64,10 +64,11 @@ class NumbaDicts:
             org = cls._get_values(df['orgmatter'] / to_fraction, ascending_depth)
             lut = cls._get_values(df['lutum'] / to_fraction, ascending_depth)
 
-            lithology[nr] = np.float64(lith)
-            thickness[nr] = np.float64(thick)
-            organic[nr] = np.float64(org)
-            lutum[nr] = np.float64(lut)
+            nr = np.int64(nr)
+            lithology[nr] = lith.astype('float64')
+            thickness[nr] = thick.astype('float64')
+            organic[nr] = org.astype('float64')
+            lutum[nr] = lut.astype('float64')
 
         return cls(thickness, lithology, organic, lutum)
 
