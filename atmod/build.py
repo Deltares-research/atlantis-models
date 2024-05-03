@@ -1,8 +1,10 @@
 import numpy as np
 import xarray as xr
+from pathlib import WindowsPath
 from typing import TypeVar
 
 from atmod.base import Raster, VoxelModel, Mapping, AtlansParameters, AtlansStrat
+from atmod.bro_models import BroBodemKaart
 from atmod.merge import combine_data_sources
 from atmod.preprocessing import (
     NumbaDicts,
@@ -10,7 +12,8 @@ from atmod.preprocessing import (
     map_geotop_strat,
     map_nl3d_strat,
 )
-from atmod.templates import build_template
+from atmod.templates import build_template, dask_output_model_like
+from atmod.utils import find_overlapping_areas, COMPRESSION
 from atmod.warnings import suppress_warnings
 
 
@@ -127,3 +130,79 @@ def build_atlantis_model(
     voxelmodel['layer'] = np.arange(len(voxelmodel['layer'])) + 1
 
     return voxelmodel.astype('float64')
+
+
+def build_model_in_chunks(
+    ahn: Raster,
+    geotop: VoxelModel,  # TODO: Also make input for geotop optional
+    nl3d: VoxelModel = None,
+    bodemkaart: str | WindowsPath = None,
+    glg: Raster = None,
+    parameters: AtlansParameters = None,
+    chunksize: int = 250,
+):
+    if parameters is None:
+        parameters = AtlansParameters()  # use all defaults
+
+    geotop = geotop.select(z=slice(parameters.modelbase, parameters.modeltop))
+
+    overlapping_area = find_overlapping_areas(ahn, geotop, nl3d, glg)
+    geotop = geotop.select_in_bbox(overlapping_area)
+
+    if glg is not None:
+        add_phreatic_level = True
+    else:
+        add_phreatic_level = False
+
+    if bodemkaart is not None:
+        pass  # TODO: fix that Bodemkaart layers are not always added
+
+    model = dask_output_model_like(geotop, chunksize, add_phreatic_level, True)
+
+    model = model.map_blocks(
+        _write_model_chunk,
+        kwargs={
+            'ahn': ahn,
+            'geotop': geotop,
+            'nl3d': nl3d,
+            'bodemkaart': bodemkaart,
+            'glg': glg,
+            'parameters': parameters,
+        },
+        template=model,
+    )
+    model = model.rename({'z': 'layer'})
+    model['layer'] = np.arange(len(model['layer'])) + 1
+
+    return model
+
+
+def _write_model_chunk(chunk, **kwargs):
+
+    ahn = kwargs['ahn'].select(x=chunk['x'], y=chunk['y'])
+    geotop = kwargs['geotop'].select(x=chunk['x'], y=chunk['y'])
+    nl3d = kwargs['nl3d']
+    bodemkaart = kwargs['bodemkaart']
+    glg = kwargs['glg']
+    params = kwargs['parameters']
+
+    if nl3d is not None:
+        nl3d = nl3d.select_in_bbox(geotop.bounds)
+    if glg is not None:
+        glg = glg.select_in_bbox(geotop.bounds)
+    if bodemkaart is not None:
+        bodemkaart = BroBodemKaart.from_geopackage(bodemkaart, bbox=geotop.bounds)
+
+    model = build_atlantis_model(
+        ahn=ahn,
+        geotop=geotop,
+        nl3d=nl3d,
+        bodemkaart=bodemkaart,
+        glg=glg,
+        parameters=params,
+    )
+
+    for var in model.data_vars:
+        chunk[var].data = model[var]
+
+    return chunk

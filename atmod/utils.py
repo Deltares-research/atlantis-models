@@ -11,6 +11,22 @@ VoxelModel = TypeVar('VoxelModel')
 LineString = TypeVar('LineString')
 
 
+COMPRESSION = {
+    'geology': {'zlib': True, 'complevel': 9},
+    'lithology': {'zlib': True, 'complevel': 9},
+    'thickness': {'zlib': True, 'complevel': 9},
+    'mass_fraction_organic': {'zlib': True, 'complevel': 9},
+    'surface_level': {'zlib': True, 'complevel': 9},
+    'phreatic_level': {'zlib': True, 'complevel': 9},
+    'rho_bulk': {'zlib': True, 'complevel': 9},
+    'zbase': {'zlib': True, 'complevel': 9},
+    'max_oxidation_depth': {'zlib': True, 'complevel': 9},
+    'no_oxidation_thickness': {'zlib': True, 'complevel': 9},
+    'no_shrinkage_thickness': {'zlib': True, 'complevel': 9},
+    'domainbase': {'zlib': True, 'complevel': 9},
+}
+
+
 def create_connection(database: str | WindowsPath):
     """
     Create a database connection to an SQLite database.
@@ -204,3 +220,24 @@ def divide_blocks(
             block_bounds.append((xleft, ybottom, xright, ytop))
 
     return block_bounds
+
+
+def find_overlapping_areas(ahn=None, geotop=None, nl3d=None, glg=None):
+    bounds = []
+    if ahn is not None:
+        bounds.append(ahn.bounds)
+    if geotop is not None:
+        bounds.append(geotop.bounds)
+    if nl3d is not None:
+        bounds.append(nl3d.bounds)
+    if glg is not None:
+        bounds.append(glg.bounds)
+
+    bounds = np.array(bounds)
+    overlapping_bounds = (
+        np.max(bounds[:, 0]),
+        np.max(bounds[:, 1]),
+        np.min(bounds[:, 2]),
+        np.min(bounds[:, 3]),
+    )
+    return overlapping_bounds

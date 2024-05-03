@@ -217,6 +217,14 @@ class Raster(Spatial):
         sel = self.ds.sel(indexers, **xr_kwargs)
         return self.__class__(sel, self.cellsize, self.crs)
 
+    def select_in_bbox(self, bbox):
+        xmin, ymin, xmax, ymax = bbox
+        if not self.x_ascending:
+            xmin, xmax = xmax, xmin
+        if not self.y_ascending:
+            ymin, ymax = ymax, ymin
+        return self.select(y=slice(ymin, ymax), x=slice(xmin, xmax))
+
     def get_affine(self) -> tuple:
         """
         Get an affine matrix based on the 2D extent of the data.
