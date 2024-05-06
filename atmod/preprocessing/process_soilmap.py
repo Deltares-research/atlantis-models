@@ -6,12 +6,6 @@ from atmod.bro_models import BroBodemKaart, Lithology
 from atmod.warnings import suppress_warnings
 
 
-EMPTYDICT = numba.typed.Dict.empty(
-    key_type=numba.types.int64,
-    value_type=numba.types.float64[:],
-)
-
-
 @dataclass(repr=False)
 class NumbaDicts:
     thickness: numba.typed.typeddict.Dict
@@ -47,10 +41,22 @@ class NumbaDicts:
             matter.
 
         """  # noqa: E501
-        lithology = EMPTYDICT
-        thickness = EMPTYDICT
-        organic = EMPTYDICT
-        lutum = EMPTYDICT
+        lithology = numba.typed.Dict.empty(
+            key_type=numba.types.int64,
+            value_type=numba.types.float64[:],
+        )
+        thickness = numba.typed.Dict.empty(
+            key_type=numba.types.int64,
+            value_type=numba.types.float64[:],
+        )
+        organic = numba.typed.Dict.empty(
+            key_type=numba.types.int64,
+            value_type=numba.types.float64[:],
+        )
+        lutum = numba.typed.Dict.empty(
+            key_type=numba.types.int64,
+            value_type=numba.types.float64[:],
+        )
 
         mapping_table = get_bodemkaart_mapping_table(soilmap)
         mapping_table['nr'] = (
@@ -78,7 +84,11 @@ class NumbaDicts:
         Return an instance with all empty dictionaries.
 
         """
-        return cls(EMPTYDICT, EMPTYDICT, EMPTYDICT, EMPTYDICT)
+        empty_dict = numba.typed.Dict.empty(
+            key_type=numba.types.int64,
+            value_type=numba.types.float64[:],
+        )
+        return cls(empty_dict, empty_dict, empty_dict, empty_dict)
 
     @staticmethod
     def _get_values(series, ascending_depth=True):

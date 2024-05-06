@@ -6,6 +6,9 @@ from atmod.bro_models.geology import Lithology
 from atmod.templates import get_full_like
 
 
+TYPEMIN_INT64 = np.iinfo(np.int64).min
+
+
 def combine_data_sources(
     ahn, geotop, parameters, nl3d=None, soilmap=None, soilmap_dicts=None
 ):
@@ -18,7 +21,7 @@ def combine_data_sources(
     voxelmodel = _mask_depth(voxelmodel, parameters)
 
     if soilmap is None:
-        soilmap_values = np.zeros(ahn.shape, dtype='int64')
+        soilmap_values = np.full(ahn.shape, TYPEMIN_INT64)
     else:
         soilmap_values = soilmap.ds.values
 
@@ -107,7 +110,7 @@ def combine_voxels_and_soilmap(
     modelbase,
 ):
     ysize, xsize = ahn.shape
-    no_soil_map = np.iinfo(np.int64).min # Type minimum of Int64
+    no_soil_map = TYPEMIN_INT64
     for i in range(ysize):
         for j in range(xsize):
             voxel_thickness = thickness[i, j, :]
@@ -253,9 +256,7 @@ def _combine_with_soilprofile(
         split_idx = np.argmax(depth_voxels)
 
         surface_voxels = np.nanmax(depth_voxels)
-        if (
-            surface_voxels < split_elevation
-        ):  # fill with voxel if there is 'empty space'
+        if surface_voxels < split_elevation:  # fill with voxel if it is 'empty space'
             geology[split_idx] = geology[split_idx - 1]
             lithology[split_idx] = lithology[split_idx - 1]
             organic[split_idx] = organic[split_idx - 1]
