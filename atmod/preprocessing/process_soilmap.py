@@ -46,7 +46,7 @@ class NumbaDicts:
             Dataclass containing numba dictionaries of thickness, lithology and organic
             matter.
 
-        """
+        """  # noqa: E501
         lithology = EMPTYDICT
         thickness = EMPTYDICT
         organic = EMPTYDICT

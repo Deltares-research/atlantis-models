@@ -136,7 +136,7 @@ def build_model_in_chunks(
     ahn: Raster,
     geotop: VoxelModel,  # TODO: Also make input for geotop optional
     nl3d: VoxelModel = None,
-    bodemkaart: str | WindowsPath = None,
+    bodemkaart: Mapping = None,
     glg: Raster = None,
     parameters: AtlansParameters = None,
     chunksize: int = 250,
@@ -154,8 +154,12 @@ def build_model_in_chunks(
     else:
         add_phreatic_level = False
 
-    if bodemkaart is not None:
-        pass  # TODO: fix that Bodemkaart layers are not always added
+    if bodemkaart is not None:  # TODO: fix that Bodemkaart layers are not always added
+        soilmap_dicts = NumbaDicts.from_soilmap(bodemkaart)
+        soilmap = soilmap_to_raster(bodemkaart, ahn)
+    else:
+        soilmap_dicts = NumbaDicts.empty()
+        soilmap = None
 
     model = dask_output_model_like(geotop, chunksize, add_phreatic_level, True)
 
@@ -165,7 +169,8 @@ def build_model_in_chunks(
             'ahn': ahn,
             'geotop': geotop,
             'nl3d': nl3d,
-            'bodemkaart': bodemkaart,
+            'soilmap': soilmap,
+            'soilmap_dicts': soilmap_dicts,
             'glg': glg,
             'parameters': parameters,
         },
@@ -182,25 +187,25 @@ def _write_model_chunk(chunk, **kwargs):
     ahn = kwargs['ahn'].select(x=chunk['x'], y=chunk['y'])
     geotop = kwargs['geotop'].select(x=chunk['x'], y=chunk['y'])
     nl3d = kwargs['nl3d']
-    bodemkaart = kwargs['bodemkaart']
+    soilmap = kwargs['soilmap']
+    soilmap_dicts = kwargs['soilmap_dicts']
     glg = kwargs['glg']
     params = kwargs['parameters']
 
+    geotop = map_geotop_strat(geotop)
+
     if nl3d is not None:
         nl3d = nl3d.select_in_bbox(geotop.bounds)
+        nl3d = map_nl3d_strat(nl3d)
+
     if glg is not None:
         glg = glg.select_in_bbox(geotop.bounds)
-    if bodemkaart is not None:
-        bodemkaart = BroBodemKaart.from_geopackage(bodemkaart, bbox=geotop.bounds)
 
-    model = build_atlantis_model(
-        ahn=ahn,
-        geotop=geotop,
-        nl3d=nl3d,
-        bodemkaart=bodemkaart,
-        glg=glg,
-        parameters=params,
-    )
+    if soilmap is not None:
+        soilmap = soilmap.select_in_bbox(geotop.bounds)
+
+    model = combine_data_sources(ahn, geotop, params, nl3d, soilmap, soilmap_dicts)
+    model = create_atlantis_variables(model, params, glg)
 
     for var in model.data_vars:
         chunk[var].data = model[var]

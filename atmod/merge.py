@@ -107,7 +107,7 @@ def combine_voxels_and_soilmap(
     modelbase,
 ):
     ysize, xsize = ahn.shape
-    no_soil_map = np.int64(0)
+    no_soil_map = np.iinfo(np.int64).min # Type minimum of Int64
     for i in range(ysize):
         for j in range(xsize):
             voxel_thickness = thickness[i, j, :]
