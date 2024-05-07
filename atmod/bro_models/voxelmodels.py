@@ -158,3 +158,53 @@ class Nl3d(VoxelModel):
 
         ds = _follow_gdal_conventions(ds)
         return cls(ds, cellsize, dz, crs)
+
+    @classmethod
+    def from_opendap(
+        cls,
+        strat_url=r'https://dinodata.nl/opendap/NL3D/nl3d_lithostrat.nc',
+        lithok_url=r'https://dinodata.nl/opendap/NL3D/nl3d_lithoklasse.nc',
+        data_vars: ArrayLike = None,
+        bbox: tuple = None,
+        lazy: bool = True,
+        **xr_kwargs,
+    ):
+        cellsize = 250
+        dz = 1.0
+        crs = 28992
+
+        if lazy and 'chunks' not in xr_kwargs:
+            xr_kwargs['chunks'] = 'auto'
+
+        ds = xr.Dataset()
+
+        if 'lithostrat' in data_vars or data_vars is None:
+            strat = xr.open_dataset(
+                strat_url, drop_variables=['crs', 'lat', 'lon'], **xr_kwargs
+            )
+
+            for var in strat.data_vars:
+                ds[var] = strat[var]
+
+        if 'lithoklasse' in data_vars or data_vars is None:
+            lithok = xr.open_dataset(
+                lithok_url, drop_variables=['crs', 'lat', 'lon'], **xr_kwargs
+            )
+
+            for var in lithok.data_vars:
+                ds[var] = lithok[var]
+
+        ds = cls.coordinates_to_cellcenters(ds, cellsize, dz)
+
+        if bbox is not None:
+            xmin, ymin, xmax, ymax = bbox
+            ds = ds.sel(x=slice(xmin, xmax), y=slice(ymin, ymax))
+
+        if data_vars is not None:
+            ds = ds[data_vars]
+
+        if not lazy:
+            print('Load data')
+            ds = ds.load()
+
+        return cls(ds, cellsize, dz, crs)
