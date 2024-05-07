@@ -207,4 +207,6 @@ class Nl3d(VoxelModel):
             print('Load data')
             ds = ds.load()
 
+        ds = _follow_gdal_conventions(ds)
+
         return cls(ds, cellsize, dz, crs)
