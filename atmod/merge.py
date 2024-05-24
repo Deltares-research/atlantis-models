@@ -248,7 +248,8 @@ def _combine_with_soilprofile(
     modelbase,
 ):
     split_elevation = surface - np.sum(soil_thickness)
-    depth_voxels = modelbase + np.cumsum(thickness)
+    depth_voxels = modelbase + np.nancumsum(thickness)
+    depth_voxels[np.isnan(thickness)] = np.nan
 
     split_idx = np.argmax(depth_voxels > split_elevation)
 
