@@ -96,7 +96,7 @@ def _allocate_memory_for_soilmap(voxelmodel, nlayers):
     return voxelmodel
 
 
-@numba.njit
+# @numba.njit
 def combine_voxels_and_soilmap(
     ahn,
     thickness,
@@ -121,10 +121,15 @@ def combine_voxels_and_soilmap(
             surface = ahn[i, j]
 
             invalid_surface = np.isnan(surface) or surface > 95
-            invalid_voxel_column = np.all(np.isnan(voxel_lithology))
+            invalid_voxels = np.isnan(voxel_lithology)
+            invalid_voxel_column = np.all(invalid_voxels)
 
             if invalid_surface or invalid_voxel_column:
                 continue
+
+            if invalid_voxels[0]:  # Base of voxels is invalid.
+                first_valid = np.min(np.nonzero(~invalid_voxels))
+                voxel_thickness[:first_valid] = 0.5
 
             soilnr = np.int64(soilmap[i, j])
 
@@ -181,7 +186,7 @@ def combine_voxels_and_soilmap(
     return thickness, geology, lithology, organic
 
 
-@numba.njit
+# @numba.njit
 def _fill_anthropogenic(thickness, geology, lithology, organic, difference):
     anthropogenic = 0.0
     idx_to_fill = _get_top_voxel_idx(thickness) + 1
@@ -193,7 +198,7 @@ def _fill_anthropogenic(thickness, geology, lithology, organic, difference):
     return thickness, geology, lithology, organic
 
 
-@numba.njit
+# @numba.njit
 def _shift_voxel_surface_down(
     thickness, geology, lithology, organic, surface, modelbase
 ):
@@ -219,7 +224,7 @@ def _shift_voxel_surface_down(
     return thickness, geology, lithology, organic
 
 
-@numba.njit
+# @numba.njit
 def _shift_voxel_surface_up(thickness, geology, lithology, organic, surface, modelbase):
     top_idx = _get_top_voxel_idx(thickness)
     extra_thickness = surface - (modelbase + np.nansum(thickness))
@@ -235,7 +240,7 @@ def _shift_voxel_surface_up(thickness, geology, lithology, organic, surface, mod
     return thickness, geology, lithology, organic
 
 
-@numba.njit
+# @numba.njit
 def _combine_with_soilprofile(
     thickness,
     geology,
@@ -295,16 +300,16 @@ def _combine_with_soilprofile(
     return thickness, geology, lithology, organic
 
 
-@numba.njit
+# @numba.njit
 def _get_top_voxel_idx(voxels):
     valid_voxels = ~np.isnan(voxels)
     if np.all(valid_voxels):
         return -1
     else:
-        return np.argmax(np.nonzero(valid_voxels)[0])
+        return np.max(np.nonzero(valid_voxels)[0])
 
 
-@numba.njit
+# @numba.njit
 def _top_is_anthropogenic(lith):
     top_lith = lith[_get_top_voxel_idx(lith)]
     return top_lith == 0
