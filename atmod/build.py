@@ -37,6 +37,19 @@ def _calc_rho_bulk(voxelmodel, parameters):
     return rho_bulk
 
 
+def calculate_domainbase(voxelmodel, parameters):
+    thickness_holocene = np.nansum(
+        voxelmodel['thickness'].where(voxelmodel['geology'] == AtlansStrat.holocene),
+        axis=2,
+    )
+    surface_level_voxels = parameters.modelbase + np.nansum(
+        voxelmodel['thickness'], axis=2
+    )
+    domainbase = surface_level_voxels - thickness_holocene
+    domainbase[thickness_holocene==0] = np.nan
+    return domainbase
+
+
 def create_atlantis_variables(voxelmodel, parameters, glg=None):
     if glg is not None:
         voxelmodel['phreatic_level'] = (glg.dims, glg.values)
@@ -55,11 +68,8 @@ def create_atlantis_variables(voxelmodel, parameters, glg=None):
     voxelmodel['no_shrinkage_thickness'] = xr.full_like(
         voxelmodel['surface_level'], parameters.no_shrinkage_thickness
     )
-
-    bottom_holocene = voxelmodel.select_bottom(
-        voxelmodel['geology'] == AtlansStrat.holocene
-    )
-    voxelmodel['domainbase'] = bottom_holocene.ds
+    domainbase = calculate_domainbase(voxelmodel, parameters)
+    voxelmodel['domainbase'] = (('y', 'x'), domainbase)
 
     return voxelmodel
 

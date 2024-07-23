@@ -129,12 +129,12 @@ def combine_voxels_and_soilmap(
 
             soilnr = np.int64(soilmap[i, j])
 
-            surface_level_voxels = modelbase + np.nansum(voxel_thickness)
-
-            # Surface level voxels is underestimated when base of voxels is invalid.
+            # Surface level voxels will be underestimated when base of voxels is invalid
             if invalid_voxels[0]:
                 first_valid = np.min(np.nonzero(~invalid_voxels)[0])
-                surface_level_voxels += first_valid * 0.5
+                voxel_thickness[:first_valid] = 0.5
+
+            surface_level_voxels = modelbase + np.nansum(voxel_thickness)
 
             surface_difference = surface - surface_level_voxels
 
