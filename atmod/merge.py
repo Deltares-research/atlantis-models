@@ -132,6 +132,7 @@ def combine_voxels_and_soilmap(
             # Surface level voxels will be underestimated when base of voxels is invalid
             if invalid_voxels[0]:
                 first_valid = np.min(np.nonzero(~invalid_voxels)[0])
+                # Temporarily add thicknesses at invalid locations.
                 voxel_thickness[:first_valid] = 0.5
 
             surface_level_voxels = modelbase + np.nansum(voxel_thickness)
@@ -179,6 +180,9 @@ def combine_voxels_and_soilmap(
                     surface,
                     modelbase,
                 )
+
+            # Reset temporarily added thicknesses for invalid voxels.
+            vt[invalid_voxels] = np.nan
 
             thickness[i, j, :] = vt
             geology[i, j, :] = vg
