@@ -6,7 +6,8 @@ from atmod.bro_models import GeoTop, Nl3d, StratGeoTop, StratNl3d
 def map_geotop_strat(geotop: GeoTop) -> GeoTop:
     holocene_units = np.r_[
         StratGeoTop.holocene.values,
-        StratGeoTop.anthropogenic.values
+        StratGeoTop.channel_belts.values,
+        StratGeoTop.anthropogenic.values,
     ]
 
     is_holocene = geotop['strat'].isin(holocene_units)
