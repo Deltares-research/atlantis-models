@@ -194,13 +194,6 @@ def build_model_in_chunks(
 
 def _write_model_chunk(chunk, **kwargs):
 
-    chunk_bounds = (
-        np.min(chunk['x'].values),
-        np.min(chunk['y'].values),
-        np.max(chunk['x'].values),
-        np.max(chunk['y'].values),
-    )
-
     ahn = kwargs['ahn'].select(x=chunk['x'], y=chunk['y'])
     geotop = kwargs['geotop'].select(x=chunk['x'], y=chunk['y'])
     nl3d = kwargs['nl3d']
@@ -212,14 +205,14 @@ def _write_model_chunk(chunk, **kwargs):
     geotop = map_geotop_strat(geotop)
 
     if nl3d is not None:
-        nl3d = nl3d.select_in_bbox(chunk_bounds)
+        nl3d.ds = nl3d.ds.reindex({'y': chunk['y'], 'x': chunk['x']})
         nl3d = map_nl3d_strat(nl3d)
 
     if glg is not None:
-        glg = glg.select_in_bbox(chunk_bounds)
+        glg.ds = glg.ds.reindex({'y': chunk['y'], 'x': chunk['x']})
 
     if soilmap is not None:
-        soilmap = soilmap.select_in_bbox(chunk_bounds)
+        soilmap.ds = soilmap.ds.reindex({'y': chunk['y'], 'x': chunk['x']})
 
     model = combine_data_sources(ahn, geotop, params, nl3d, soilmap, soilmap_dicts)
     model = create_atlantis_variables(model, params, glg)
