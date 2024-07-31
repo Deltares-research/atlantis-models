@@ -144,10 +144,10 @@ def build_atlantis_model(
 
 def build_model_in_chunks(
     ahn: Raster,
-    geotop: VoxelModel,  # TODO: Also make input for geotop optional
-    nl3d: VoxelModel = None,
-    bodemkaart: Mapping = None,
-    glg: Raster = None,
+    geotop: VoxelModel,
+    nl3d: VoxelModel,
+    bodemkaart: Mapping,
+    glg: Raster,
     parameters: AtlansParameters = None,
     chunksize: int = 250,
 ):
@@ -159,19 +159,10 @@ def build_model_in_chunks(
     overlapping_area = find_overlapping_areas(ahn, geotop, nl3d, glg)
     geotop = geotop.select_in_bbox(overlapping_area)
 
-    if glg is not None:
-        add_phreatic_level = True
-    else:
-        add_phreatic_level = False
+    soilmap_dicts = NumbaDicts.from_soilmap(bodemkaart)
+    soilmap = soilmap_to_raster(bodemkaart, ahn)
 
-    if bodemkaart is not None:  # TODO: fix that Bodemkaart layers are not always added
-        soilmap_dicts = NumbaDicts.from_soilmap(bodemkaart)
-        soilmap = soilmap_to_raster(bodemkaart, ahn)
-    else:
-        soilmap_dicts = NumbaDicts.empty()
-        soilmap = None
-
-    model = dask_output_model_like(geotop, chunksize, add_phreatic_level, True)
+    model = dask_output_model_like(geotop, chunksize, True, True)
 
     model = model.map_blocks(
         _write_model_chunk,
@@ -196,23 +187,17 @@ def _write_model_chunk(chunk, **kwargs):
 
     ahn = kwargs['ahn'].select(x=chunk['x'], y=chunk['y'])
     geotop = kwargs['geotop'].select(x=chunk['x'], y=chunk['y'])
-    nl3d = kwargs['nl3d']
-    soilmap = kwargs['soilmap']
+    nl3d = kwargs['nl3d'].select(
+        x=slice(chunk['x'].min(), chunk['x'].max()),
+        y=slice(chunk['y'].max(), chunk['y'].min()),
+    )
+    soilmap = kwargs['soilmap'].select(x=chunk['x'], y=chunk['y'])
     soilmap_dicts = kwargs['soilmap_dicts']
-    glg = kwargs['glg']
+    glg = kwargs['glg'].select(x=chunk['x'], y=chunk['y'])
     params = kwargs['parameters']
 
     geotop = map_geotop_strat(geotop)
-
-    if nl3d is not None:
-        nl3d.ds = nl3d.ds.reindex({'y': chunk['y'], 'x': chunk['x']})
-        nl3d = map_nl3d_strat(nl3d)
-
-    if glg is not None:
-        glg.ds = glg.ds.reindex({'y': chunk['y'], 'x': chunk['x']})
-
-    if soilmap is not None:
-        soilmap.ds = soilmap.ds.reindex({'y': chunk['y'], 'x': chunk['x']})
+    nl3d = map_nl3d_strat(nl3d)
 
     model = combine_data_sources(ahn, geotop, params, nl3d, soilmap, soilmap_dicts)
     model = create_atlantis_variables(model, params, glg)
