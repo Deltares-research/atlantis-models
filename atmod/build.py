@@ -188,11 +188,11 @@ def _write_model_chunk(chunk, **kwargs):
     xmin, xmax = chunk['x'].min(), chunk['x'].max()
     ymin, ymax = chunk['y'].max(), chunk['y'].min()
 
-    ahn = kwargs['ahn'].select(x=slice(xmin, xmax), y=slice(ymin, ymax))
-    geotop = kwargs['geotop'].select(x=slice(xmin, xmax), y=slice(ymin, ymax))
-    nl3d = kwargs['nl3d'].select(x=slice(xmin, xmax), y=slice(ymin, ymax))
-    soilmap = kwargs['soilmap'].select(x=slice(xmin, xmax), y=slice(ymin, ymax))
-    glg = kwargs['glg'].select(x=slice(xmin, xmax), y=slice(ymin, ymax))
+    ahn = kwargs['ahn'].select(x=slice(xmin, xmax), y=slice(ymax, ymin))
+    geotop = kwargs['geotop'].select(x=slice(xmin, xmax), y=slice(ymax, ymin))
+    nl3d = kwargs['nl3d'].select(x=slice(xmin, xmax), y=slice(ymax, ymin))
+    soilmap = kwargs['soilmap'].select(x=slice(xmin, xmax), y=slice(ymax, ymin))
+    glg = kwargs['glg'].select(x=slice(xmin, xmax), y=slice(ymax, ymin))
     soilmap_dicts = kwargs['soilmap_dicts']
     params = kwargs['parameters']
 
