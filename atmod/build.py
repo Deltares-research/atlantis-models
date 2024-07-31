@@ -186,7 +186,7 @@ def build_model_in_chunks(
 def _write_model_chunk(chunk, **kwargs):
 
     xmin, xmax = chunk['x'].min(), chunk['x'].max()
-    ymin, ymax = chunk['y'].max(), chunk['y'].min()
+    ymin, ymax = chunk['y'].min(), chunk['y'].max()
 
     ahn = kwargs['ahn'].select(x=slice(xmin, xmax), y=slice(ymax, ymin))
     geotop = kwargs['geotop'].select(x=slice(xmin, xmax), y=slice(ymax, ymin))
