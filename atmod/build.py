@@ -185,15 +185,15 @@ def build_model_in_chunks(
 
 def _write_model_chunk(chunk, **kwargs):
 
-    ahn = kwargs['ahn'].select(x=chunk['x'], y=chunk['y'])
-    geotop = kwargs['geotop'].select(x=chunk['x'], y=chunk['y'])
-    nl3d = kwargs['nl3d'].select(
-        x=slice(chunk['x'].min(), chunk['x'].max()),
-        y=slice(chunk['y'].max(), chunk['y'].min()),
-    )
-    soilmap = kwargs['soilmap'].select(x=chunk['x'], y=chunk['y'])
+    xmin, xmax = chunk['x'].min(), chunk['x'].max()
+    ymin, ymax = chunk['y'].max(), chunk['y'].min()
+
+    ahn = kwargs['ahn'].select(x=slice(xmin, xmax), y=slice(ymin, ymax))
+    geotop = kwargs['geotop'].select(x=slice(xmin, xmax), y=slice(ymin, ymax))
+    nl3d = kwargs['nl3d'].select(x=slice(xmin, xmax), y=slice(ymin, ymax))
+    soilmap = kwargs['soilmap'].select(x=slice(xmin, xmax), y=slice(ymin, ymax))
+    glg = kwargs['glg'].select(x=slice(xmin, xmax), y=slice(ymin, ymax))
     soilmap_dicts = kwargs['soilmap_dicts']
-    glg = kwargs['glg'].select(x=chunk['x'], y=chunk['y'])
     params = kwargs['parameters']
 
     geotop = map_geotop_strat(geotop)
