@@ -217,6 +217,10 @@ class Raster(Spatial):
         sel = self.ds.sel(indexers, **xr_kwargs)
         return self.__class__(sel, self.cellsize, self.crs)
 
+    def select_idx(self, indexers: Optional[dict] = None, **xr_kwargs):
+        sel = self.ds.isel(indexers, **xr_kwargs)
+        return self.__class__(sel, self.cellsize, self.crs)
+
     def select_in_bbox(self, bbox):
         xmin, ymin, xmax, ymax = bbox
         if not self.x_ascending:
@@ -419,6 +423,10 @@ class VoxelModel(Raster):
 
         """
         sel = self.ds.sel(indexers, **xr_kwargs)
+        return self.__class__(sel, self.cellsize, self.dz, self.epsg)
+
+    def select_idx(self, indexers: Optional[dict] = None, **xr_kwargs):
+        sel = self.ds.isel(indexers, **xr_kwargs)
         return self.__class__(sel, self.cellsize, self.dz, self.epsg)
 
     def select_like(self, other):
