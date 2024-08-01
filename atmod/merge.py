@@ -176,9 +176,9 @@ def combine_voxels_and_soilmap(
                     voxel_geology,
                     voxel_lithology,
                     voxel_organic,
-                    soilmap_thickness[soilnr],
-                    soilmap_lithology[soilnr],
-                    soilmap_organic[soilnr],
+                    soilmap_thickness[soilnr].copy(),
+                    soilmap_lithology[soilnr].copy(),
+                    soilmap_organic[soilnr].copy(),
                     surface,
                     modelbase,
                 )
