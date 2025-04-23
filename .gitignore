@@ -127,3 +127,6 @@ ENV/
 
 # VS-Code
 *.code-workspace
+# pixi environments
+.pixi
+*.egg-info

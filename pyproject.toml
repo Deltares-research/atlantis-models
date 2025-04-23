@@ -1,63 +1,107 @@
-[build-system]
-requires = [
-    "setuptools>=64",
-    "wheel"
-]
-build-backend = "setuptools.build_meta"
-
 [project]
-name = "atmod"
-version = "0.1.0"
-authors = [
-    {name = "Bas Knaake", email = "bas.knaake@deltares.nl"}
+maintainers = [{name = "smknaake", email = "bas.knaake@deltares.nl"}]
+dependencies = [
+	"numpy",
+	"rasterio",
+	"rioxarray",
+	"xarray",
+	"dask",
+	"pandas",
+	"geopandas",
+	"pytest",
+	"netcdf4",
+	"h5netcdf",
+	"numba",
 ]
-description = "Easy workflow to build subsurface models for Atlantis subsurface modelling"
+description = "Build subsurface models for subsidence modelling with Atlantis"
+name = "atlantis-models"
+requires-python = ">= 3.11"
+dynamic = ["version"]
 readme = "README.md"
 license = {file = "LICENSE"}
+keywords = [
+    "Subsidence models",
+	"Atlantis",
+	"Deltares", 
+]
 classifiers = [
-    "evelopment Status :: 2 - Pre-Alpha",
-    "Intended Audience :: Science/Research/Consultans",
-    "Topic :: Scientific/Engineering :: Geology",
-    "License :: OSI Approved :: MIT License",
-    "Operating System :: OS Independent",
-    "Programming Language :: Python",
-    "Programming Language :: Python :: 3.11",
-    "Topic :: Scientific/Engineering",
-]
-requires-python = ">=3.10, <3.12"
-dependencies = [
-    "numpy <=1.24", # numba requirement
-    "pandas >=2.0.1",
-    "pyarrow",
-    "pyproj",
-	"geopandas",
-    "openpyxl",
-    "shapely >=2.0.1",
-    "rasterio",
-	"xarray",
-    "rioxarray",
-	"dask",
-	"numba",
-	"owslib",
-    "netcdf4",
-    "h5netcdf",
-    "matplotlib",
-]
-
-[project.optional-dependencies]
-dev = [
-    "black",
-    "pytest",
-    "pytest-cov",
-    "ruff",
-    "sphinx",
-    "sphinx-rtd-theme",
+    "Development Status :: 2 - Pre-Alpha",
+    "Intended Audience :: Science/Research",
+	"Topic :: Scientific/Engineering",
+	"License :: OSI Approved :: MIT License",
+	"Operating System :: OS Independent",
+	"Programming Language :: Python",
 ]
 
 [project.urls]
-Homepage = "https://gitlab.com/deltares/tgg-projects/atlantis_models.git"
-Repository = "https://gitlab.com/deltares/tgg-projects/atlantis_models.git"
-Issues = "https://gitlab.com/deltares/tgg-projects/atlantis_models/-/issues"
+Repository = "https://github.com/Deltares-research/atlantis-models"
+Issues = "https://github.com/Deltares-research/atlantis-models/issues"
+
+[build-system]
+build-backend = "hatchling.build"
+requires = ["hatchling"]
+
+[tool.hatch.version]
+path = "src/atmod/__init__.py"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/atmod"]
+
+[tool.hatch.build.targets.sdist]
+only-include = ["src/atmod", "tests"]
+
+[tool.pixi.project]
+channels = ["conda-forge"]
+platforms = ["win-64", "linux-64", "osx-64", "osx-arm64"]
+
+[tool.pixi.pypi-dependencies]
+atlantis_models = { path = ".", editable = true }
+
+[tool.pixi.tasks]
+test = "NUMBA_DISABLE_JIT=1 pytest --cov=atmod --cov-report xml --cov-report term"
+test_local = "NUMBA_DISABLE_JIT=1 pytest -v --cov"
+format = "black ."
+lint = "ruff check --fix ./src/atmod"
+build-docs = "sphinx-build -b html docs ./docs/build"
+rm-jupyter = "rm -r ./docs/jupyter_execute"
+rm-build = "rm -r ./docs/build"
+rm-generated = "rm -r ./docs/api_reference/generated"
+rebuild-docs = { depends-on = ["rm_jupyter", "rm_build", "rm_generated", "build_docs"] }
+
+[tool.pixi.dependencies]
+python = ">=3.12"
+pip = "*"
+numpy = "*"
+openpyxl = "*"
+pyproj = "*"
+shapely = "*"
+owslib = "*"
+rasterio = "*"
+rioxarray = "*"
+xarray = "*"
+dask = "*"
+pandas = "*"
+geopandas = "*"
+pytest = "*"
+pytest-cov = "*"
+netcdf4 = "*"
+h5netcdf = "*"
+numba = "*"
+ruff = "*"
+black = "*"
+sphinx = "*"
+sphinx-rtd-theme = "*"
+
+[tool.pixi.feature.py312.dependencies]
+python = "3.12.*"
+
+[tool.pixi.feature.py313.dependencies]
+python = "3.13.*"
+
+[tool.pixi.environments]
+default = { features = ["py313"], solve-group = "py313" }
+py312 = { features = ["py312"], solve-group = "py312" }
+py313 = { features = ["py313"], solve-group = "py313" }
 
 [tool.pytest.ini_options]
 testpaths = [
@@ -68,19 +112,20 @@ markers = [
 	"integrationtest: test of multiple components",
 ]
 
-[tool.setuptools.packages.find]
-include = ["atmod", "atmod.*"]
+[tool.coverage.report]
+exclude_lines = [
+  "pragma: no cover",
+]
 
 [tool.black]
 line-length = 88
-skip-string-normalization = true
 
 [tool.ruff]
 line-length = 88
-target-version = "py310"
-select = ["F", "E", "W", "N", "I001"]
-ignore = ["F401", "I001"]
-unfixable = ["F401"]
+target-version = "py311"
 
-[tool.ruff.pydocstyle]
-convention = "numpy"
+[tool.ruff.lint]
+select = ["F", "E", "W", "N", "I001", "NPY201"]
+ignore = ["F401", "E501", "F811"]
+unfixable = ["F401"]
+pydocstyle.convention = "numpy"
