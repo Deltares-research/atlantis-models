@@ -1,13 +1,9 @@
-import numpy as np
 from dataclasses import dataclass
 
+import numpy as np
+
+from atmod.bro_models.gtp_strat import ANTHROPOGENIC, CHANNELBELTS, HOLOCENE, OLDER
 from atmod.bro_models.nl3d_strat import NL3D_STRAT
-from atmod.bro_models.gtp_strat import (
-    ANTHROPOGENIC,
-    HOLOCENE,
-    OLDER,
-    CHANNELBELTS
-)
 
 
 class Strat:

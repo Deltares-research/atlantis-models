@@ -1,10 +1,10 @@
 import numba
 import numpy as np
 import xarray as xr
+
 from atmod.base import Raster, VoxelModel
 from atmod.bro_models.geology import Lithology
 from atmod.templates import get_full_like
-
 
 TYPEMIN_INT64 = np.iinfo(np.int64).min
 
@@ -29,8 +29,8 @@ def combine_data_sources(
     voxelmodel = _allocate_memory_for_soilmap(voxelmodel, max_layers_soilmap)
 
     thickness = get_full_like(voxelmodel, 0.5, np.nan)
-    geology = voxelmodel['strat'].values
-    lithoclass = voxelmodel['lithok'].values
+    geology = voxelmodel["strat"].values
+    lithoclass = voxelmodel["lithok"].values
     mass_organic = get_full_like(voxelmodel, 0.0)
     mass_organic[lithoclass == Lithology.organic] = parameters.mass_fraction_organic
 
@@ -47,13 +47,13 @@ def combine_data_sources(
         voxelmodel.zmin,
     )
 
-    voxelmodel['geology'] = (('y', 'x', 'z'), geology)
-    voxelmodel['lithology'] = (('y', 'x', 'z'), lithology)
-    voxelmodel['thickness'] = (('y', 'x', 'z'), thickness)
-    voxelmodel['mass_fraction_organic'] = (('y', 'x', 'z'), organic)
-    voxelmodel['surface_level'] = (ahn.dims, ahn.values)
+    voxelmodel["geology"] = (("y", "x", "z"), geology)
+    voxelmodel["lithology"] = (("y", "x", "z"), lithology)
+    voxelmodel["thickness"] = (("y", "x", "z"), thickness)
+    voxelmodel["mass_fraction_organic"] = (("y", "x", "z"), organic)
+    voxelmodel["surface_level"] = (ahn.dims, ahn.values)
 
-    voxelmodel.drop_vars(['strat', 'lithok'])
+    voxelmodel.drop_vars(["strat", "lithok"])
     return voxelmodel
 
 
@@ -92,7 +92,7 @@ def _allocate_memory_for_soilmap(voxelmodel, nlayers):
 
     new_zcoords = np.append(voxelmodel.zcoords, extra_zcoords)
 
-    voxelmodel.ds = voxelmodel.ds.reindex({'z': new_zcoords})
+    voxelmodel.ds = voxelmodel.ds.reindex({"z": new_zcoords})
     return voxelmodel
 
 
@@ -324,7 +324,7 @@ def _top_is_anthropogenic(lith):
 def _mask_depth(voxelmodel, parameters):
     base, top = parameters.modelbase, parameters.modeltop
 
-    if parameters.modeltop == 'infer':
+    if parameters.modeltop == "infer":
         min_idx, max_idx = _infer_depth_idxs(voxelmodel, base)
         voxelmodel.ds = voxelmodel.ds.isel(z=slice(min_idx, max_idx))
 
@@ -339,9 +339,9 @@ def _mask_depth(voxelmodel, parameters):
 
 def _infer_depth_idxs(voxelmodel, base):
     if voxelmodel.z_ascending:
-        min_idx = np.argmax(voxelmodel['z'].values > base)
+        min_idx = np.argmax(voxelmodel["z"].values > base)
     else:
-        min_idx = np.argmin(voxelmodel['z'].values > base)
+        min_idx = np.argmin(voxelmodel["z"].values > base)
 
     max_idx = np.max(voxelmodel.get_surface_level_mask())
 

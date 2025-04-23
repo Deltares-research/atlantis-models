@@ -1,29 +1,29 @@
 import sqlite3
-import numpy as np
-import xarray as xr
 from pathlib import WindowsPath
 from typing import TypeVar
+
+import numpy as np
+import xarray as xr
 from rasterio.crs import CRS
 
-
-Raster = TypeVar('Raster')
-VoxelModel = TypeVar('VoxelModel')
-LineString = TypeVar('LineString')
+Raster = TypeVar("Raster")
+VoxelModel = TypeVar("VoxelModel")
+LineString = TypeVar("LineString")
 
 
 COMPRESSION = {
-    'geology': {'zlib': True, 'complevel': 9},
-    'lithology': {'zlib': True, 'complevel': 9},
-    'thickness': {'zlib': True, 'complevel': 9},
-    'mass_fraction_organic': {'zlib': True, 'complevel': 9},
-    'surface_level': {'zlib': True, 'complevel': 9},
-    'phreatic_level': {'zlib': True, 'complevel': 9},
-    'rho_bulk': {'zlib': True, 'complevel': 9},
-    'zbase': {'zlib': True, 'complevel': 9},
-    'max_oxidation_depth': {'zlib': True, 'complevel': 9},
-    'no_oxidation_thickness': {'zlib': True, 'complevel': 9},
-    'no_shrinkage_thickness': {'zlib': True, 'complevel': 9},
-    'domainbase': {'zlib': True, 'complevel': 9},
+    "geology": {"zlib": True, "complevel": 9},
+    "lithology": {"zlib": True, "complevel": 9},
+    "thickness": {"zlib": True, "complevel": 9},
+    "mass_fraction_organic": {"zlib": True, "complevel": 9},
+    "surface_level": {"zlib": True, "complevel": 9},
+    "phreatic_level": {"zlib": True, "complevel": 9},
+    "rho_bulk": {"zlib": True, "complevel": 9},
+    "zbase": {"zlib": True, "complevel": 9},
+    "max_oxidation_depth": {"zlib": True, "complevel": 9},
+    "no_oxidation_thickness": {"zlib": True, "complevel": 9},
+    "no_shrinkage_thickness": {"zlib": True, "complevel": 9},
+    "domainbase": {"zlib": True, "complevel": 9},
 }
 
 
@@ -73,7 +73,7 @@ def _follow_gdal_conventions(ds):
     else:
         ds = ds.transpose("y", "x")
 
-    if ds['y'][-1] > ds['y'][0]:
+    if ds["y"][-1] > ds["y"][0]:
         ds = ds.sel(y=slice(None, None, -1))
 
     return ds
@@ -87,7 +87,7 @@ def get_crs_object(crs: str | int | CRS):
     elif isinstance(crs, CRS):
         crs = crs
     else:
-        raise ValueError('Input crs not understood.')
+        raise ValueError("Input crs not understood.")
     return crs
 
 
@@ -160,11 +160,11 @@ def sample_along_line(
     dist, x, y = samplepoints[:, 0], samplepoints[:, 1], samplepoints[:, 2]
 
     ds_sel = ds.sel(
-        x=xr.DataArray(x, dims='dist'), y=xr.DataArray(y, dims='dist'), method='nearest'
+        x=xr.DataArray(x, dims="dist"), y=xr.DataArray(y, dims="dist"), method="nearest"
     )
-    ds_sel = ds_sel.assign_coords(dist=('dist', dist))
+    ds_sel = ds_sel.assign_coords(dist=("dist", dist))
 
-    return ds_sel.transpose('z', 'dist')
+    return ds_sel.transpose("z", "dist")
 
 
 def divide_blocks(

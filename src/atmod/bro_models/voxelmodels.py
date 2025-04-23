@@ -1,11 +1,13 @@
+from pathlib import WindowsPath
+from typing import Optional, TypeVar
+
 import numpy as np
 import xarray as xr
-from pathlib import WindowsPath
-from typing import TypeVar, Optional
+
 from atmod.base import VoxelModel
 from atmod.utils import _follow_gdal_conventions, get_crs_object
 
-ArrayLike = TypeVar('ArrayLike')
+ArrayLike = TypeVar("ArrayLike")
 
 
 class GeoTop(VoxelModel):
@@ -45,8 +47,8 @@ class GeoTop(VoxelModel):
         dz = 0.5
         crs = 28992
 
-        if lazy and 'chunks' not in xr_kwargs:
-            xr_kwargs['chunks'] = 'auto'
+        if lazy and "chunks" not in xr_kwargs:
+            xr_kwargs["chunks"] = "auto"
 
         ds = xr.open_dataset(nc_path, **xr_kwargs)
         ds = cls.coordinates_to_cellcenters(ds, cellsize, dz)
@@ -59,7 +61,7 @@ class GeoTop(VoxelModel):
             ds = ds[data_vars]
 
         if not lazy:
-            print('Load data')
+            print("Load data")
             ds = ds.load()
 
         ds = _follow_gdal_conventions(ds)
@@ -68,7 +70,7 @@ class GeoTop(VoxelModel):
     @classmethod
     def from_opendap(
         cls,
-        url: str = r'https://dinodata.nl/opendap/GeoTOP/geotop.nc',
+        url: str = r"https://dinodata.nl/opendap/GeoTOP/geotop.nc",
         data_vars: ArrayLike = None,
         bbox: tuple = None,
         lazy: bool = True,
@@ -139,8 +141,8 @@ class Nl3d(VoxelModel):
         dz = 1.0
         crs = 28992
 
-        if lazy and 'chunks' not in xr_kwargs:
-            xr_kwargs['chunks'] = 'auto'
+        if lazy and "chunks" not in xr_kwargs:
+            xr_kwargs["chunks"] = "auto"
 
         ds = xr.open_dataset(nc_path, **xr_kwargs)
         ds = cls.coordinates_to_cellcenters(ds, cellsize, dz)
@@ -153,7 +155,7 @@ class Nl3d(VoxelModel):
             ds = ds[data_vars]
 
         if not lazy:
-            print('Load data')
+            print("Load data")
             ds = ds.load()
 
         ds = _follow_gdal_conventions(ds)
@@ -162,8 +164,8 @@ class Nl3d(VoxelModel):
     @classmethod
     def from_opendap(
         cls,
-        strat_url=r'https://dinodata.nl/opendap/NL3D/nl3d_lithostrat.nc',
-        lithok_url=r'https://dinodata.nl/opendap/NL3D/nl3d_lithoklasse.nc',
+        strat_url=r"https://dinodata.nl/opendap/NL3D/nl3d_lithostrat.nc",
+        lithok_url=r"https://dinodata.nl/opendap/NL3D/nl3d_lithoklasse.nc",
         data_vars: ArrayLike = None,
         bbox: tuple = None,
         lazy: bool = True,
@@ -173,22 +175,22 @@ class Nl3d(VoxelModel):
         dz = 1.0
         crs = 28992
 
-        if lazy and 'chunks' not in xr_kwargs:
-            xr_kwargs['chunks'] = 'auto'
+        if lazy and "chunks" not in xr_kwargs:
+            xr_kwargs["chunks"] = "auto"
 
         ds = xr.Dataset()
 
-        if 'lithostrat' in data_vars or data_vars is None:
+        if "lithostrat" in data_vars or data_vars is None:
             strat = xr.open_dataset(
-                strat_url, drop_variables=['crs', 'lat', 'lon'], **xr_kwargs
+                strat_url, drop_variables=["crs", "lat", "lon"], **xr_kwargs
             )
 
             for var in strat.data_vars:
                 ds[var] = strat[var]
 
-        if 'lithoklasse' in data_vars or data_vars is None:
+        if "lithoklasse" in data_vars or data_vars is None:
             lithok = xr.open_dataset(
-                lithok_url, drop_variables=['crs', 'lat', 'lon'], **xr_kwargs
+                lithok_url, drop_variables=["crs", "lat", "lon"], **xr_kwargs
             )
 
             for var in lithok.data_vars:
@@ -204,7 +206,7 @@ class Nl3d(VoxelModel):
             ds = ds[data_vars]
 
         if not lazy:
-            print('Load data')
+            print("Load data")
             ds = ds.load()
 
         ds = _follow_gdal_conventions(ds)

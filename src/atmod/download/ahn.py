@@ -10,7 +10,7 @@ class AhnWcs:
 
     def __init__(
         self,
-        url=r'https://service.pdok.nl/rws/ahn/wcs/v1_0?SERVICE=WCS&request=GetCapabilities',
+        url=r"https://service.pdok.nl/rws/ahn/wcs/v1_0?SERVICE=WCS&request=GetCapabilities",
     ):
         self.wcs = WebCoverageService(url)
         print(2)
@@ -21,7 +21,7 @@ class AhnWcs:
 
     @property
     def available_formats(self):
-        return self.wcs.getOperationByName('GetMap').formatOptions
+        return self.wcs.getOperationByName("GetMap").formatOptions
 
     def available_crs(self, layer: str):
         return self.wcs[layer].crsOptions()
@@ -32,12 +32,12 @@ class AhnWcs:
         xmin, ymin, xmax, ymax = bbox
         width_pixels = (xmax - xmin) // 0.5
         height_pixels = (ymax - ymin) // 0.5
-        subsets = [('X', xmin, xmax), ('Y', ymin, ymax)]
+        subsets = [("X", xmin, xmax), ("Y", ymin, ymax)]
 
         response = self.wcs.getCoverage(
-            identifier=['dtm_05m'],
-            format='image/tiff',
-            crs='EPSG:28992',
+            identifier=["dtm_05m"],
+            format="image/tiff",
+            crs="EPSG:28992",
             subsets=subsets,
             width=width_pixels,
             height=height_pixels,

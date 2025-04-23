@@ -1,7 +1,9 @@
+from dataclasses import dataclass
+
 import numba
 import numpy as np
 import pandas as pd
-from dataclasses import dataclass
+
 from atmod.bro_models import BroBodemKaart, Lithology
 from atmod.warnings import suppress_warnings
 
@@ -15,7 +17,7 @@ class NumbaDicts:
 
     def __repr__(self):
         keys = list(self.__dict__.keys())
-        return f'NumbaDicts instance of typical soilprofiles:\n\tAttributes: {keys}'
+        return f"NumbaDicts instance of typical soilprofiles:\n\tAttributes: {keys}"
 
     @classmethod
     @suppress_warnings(numba.NumbaTypeSafetyWarning)
@@ -59,22 +61,22 @@ class NumbaDicts:
         )
 
         mapping_table = get_bodemkaart_mapping_table(soilmap)
-        mapping_table['nr'] = (
-            mapping_table['nr'].str.split('.', expand=True)[2].astype(int)
+        mapping_table["nr"] = (
+            mapping_table["nr"].str.split(".", expand=True)[2].astype(int)
         )
 
         to_fraction = 100
-        for nr, df in mapping_table.groupby('nr'):
-            lith = cls._get_values(df['lithology'], ascending_depth)
-            thick = cls._get_values(df['thickness'], ascending_depth)
-            org = cls._get_values(df['orgmatter'] / to_fraction, ascending_depth)
-            lut = cls._get_values(df['lutum'] / to_fraction, ascending_depth)
+        for nr, df in mapping_table.groupby("nr"):
+            lith = cls._get_values(df["lithology"], ascending_depth)
+            thick = cls._get_values(df["thickness"], ascending_depth)
+            org = cls._get_values(df["orgmatter"] / to_fraction, ascending_depth)
+            lut = cls._get_values(df["lutum"] / to_fraction, ascending_depth)
 
             nr = np.int64(nr)
-            lithology[nr] = lith.astype('float64')
-            thickness[nr] = thick.astype('float64')
-            organic[nr] = org.astype('float64')
-            lutum[nr] = lut.astype('float64')
+            lithology[nr] = lith.astype("float64")
+            thickness[nr] = thick.astype("float64")
+            organic[nr] = org.astype("float64")
+            lutum[nr] = lut.astype("float64")
 
         return cls(thickness, lithology, organic, lutum)
 
@@ -119,7 +121,7 @@ def determine_geotop_lithology_from(soiltable: pd.DataFrame) -> np.array:
         Numpy array of the lithology classes.
 
     """
-    soiltable['sand'] = 100 - soiltable['loamcontent']
+    soiltable["sand"] = 100 - soiltable["loamcontent"]
 
     ## get indices of lithologies
     organic = _is_organic(soiltable)
@@ -146,7 +148,7 @@ def _is_organic(soiltable: pd.DataFrame):
         See doc 'determine_geotop_lithology_from'.
 
     """
-    return (soiltable['organicmattercontent'] > 25) & (soiltable['sand'] < 65)
+    return (soiltable["organicmattercontent"] > 25) & (soiltable["sand"] < 65)
 
 
 def _is_sand(soiltable: pd.DataFrame):
@@ -160,10 +162,10 @@ def _is_sand(soiltable: pd.DataFrame):
         See doc 'determine_geotop_lithology_from'.
 
     """
-    is_sand = (soiltable['sand'] >= 65) & (soiltable['lutitecontent'] < 35)
-    fine_sand = soiltable['sandmedian'] <= 210
-    medium_sand = (soiltable['sandmedian'] > 210) & (soiltable['sandmedian'] <= 420)
-    coarse_sand = soiltable['sandmedian'] > 420
+    is_sand = (soiltable["sand"] >= 65) & (soiltable["lutitecontent"] < 35)
+    fine_sand = soiltable["sandmedian"] <= 210
+    medium_sand = (soiltable["sandmedian"] > 210) & (soiltable["sandmedian"] <= 420)
+    coarse_sand = soiltable["sandmedian"] > 420
 
     fine_sand = fine_sand & is_sand
     medium_sand = medium_sand & is_sand
@@ -183,7 +185,7 @@ def _is_clay(soiltable: pd.DataFrame):
         See doc 'determine_geotop_lithology_from'.
 
     """
-    return soiltable['lutitecontent'] > 50
+    return soiltable["lutitecontent"] > 50
 
 
 def get_bodemkaart_mapping_table(soilmap) -> pd.DataFrame:
@@ -205,18 +207,18 @@ def get_bodemkaart_mapping_table(soilmap) -> pd.DataFrame:
     typical_soilprofiles = soilmap.get_typical_soilprofiles()
 
     lithology = determine_geotop_lithology_from(typical_soilprofiles)
-    thickness = typical_soilprofiles['uppervalue'] - typical_soilprofiles['lowervalue']
+    thickness = typical_soilprofiles["uppervalue"] - typical_soilprofiles["lowervalue"]
 
     mapping_table = pd.DataFrame(
         dict(
-            nr=typical_soilprofiles['maparea_id'],
-            soilid=typical_soilprofiles['normalsoilprofile_id'],
-            soilunit=typical_soilprofiles['faohorizonnotation'],
-            layer=typical_soilprofiles['layernumber'],
+            nr=typical_soilprofiles["maparea_id"],
+            soilid=typical_soilprofiles["normalsoilprofile_id"],
+            soilunit=typical_soilprofiles["faohorizonnotation"],
+            layer=typical_soilprofiles["layernumber"],
             thickness=thickness,
             lithology=lithology,
-            orgmatter=typical_soilprofiles['organicmattercontent'],
-            lutum=typical_soilprofiles['lutitecontent'],
+            orgmatter=typical_soilprofiles["organicmattercontent"],
+            lutum=typical_soilprofiles["lutitecontent"],
         )
     )
 

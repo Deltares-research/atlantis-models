@@ -1,4 +1,4 @@
-name: Lusos CI
+name: Atlantis-models CI
 
 on:
   push:
@@ -25,7 +25,7 @@ jobs:
       - name: Install ruff
         run: pip install ruff
       - name: Run linter
-        run: ruff check ./lusos
+        run: ruff check ./src/atmod
 
   test:
     name: ${{ matrix.pixi-environment }} - ${{ matrix.os }}

@@ -1,13 +1,13 @@
-import pytest
 import numpy as np
-from numpy.testing import assert_equal, assert_almost_equal, assert_array_equal
+import pytest
+from numpy.testing import assert_almost_equal, assert_array_equal, assert_equal
 
 from atmod.merge import (
+    _combine_with_soilprofile,
     _fill_anthropogenic,
+    _get_top_voxel_idx,
     _shift_voxel_surface_down,
     _shift_voxel_surface_up,
-    _combine_with_soilprofile,
-    _get_top_voxel_idx,
 )
 
 
@@ -50,7 +50,7 @@ class TestCombineColumns:
         test_voxel_thickness,
         test_voxel_geology,
         test_voxel_lithology,
-        test_voxel_organic
+        test_voxel_organic,
     ):
         assert len(test_voxel_thickness) == 15
         assert len(test_voxel_geology) == 15
@@ -72,7 +72,7 @@ class TestCombineColumns:
         test_voxel_thickness,
         test_voxel_geology,
         test_voxel_lithology,
-        test_voxel_organic
+        test_voxel_organic,
     ):
         difference = 3.1
         vt, vg, vl, vo = _fill_anthropogenic(
@@ -80,7 +80,7 @@ class TestCombineColumns:
             test_voxel_geology,
             test_voxel_lithology,
             test_voxel_organic,
-            difference
+            difference,
         )
         filled_index = 10
         assert vt[filled_index] == difference
@@ -97,7 +97,7 @@ class TestCombineColumns:
         test_voxel_thickness,
         test_voxel_geology,
         test_voxel_lithology,
-        test_voxel_organic
+        test_voxel_organic,
     ):
         modelbase = -5.0
         surface = 0.05
@@ -125,7 +125,7 @@ class TestCombineColumns:
         test_voxel_thickness,
         test_voxel_geology,
         test_voxel_lithology,
-        test_voxel_organic
+        test_voxel_organic,
     ):
         modelbase = -5.0
         surface = 0.15
@@ -157,7 +157,7 @@ class TestCombineColumns:
         test_voxel_thickness,
         test_voxel_geology,
         test_voxel_lithology,
-        test_voxel_organic
+        test_voxel_organic,
     ):
         modelbase = -5.0
         surface = -0.45
@@ -186,7 +186,7 @@ class TestCombineColumns:
         test_voxel_thickness,
         test_voxel_geology,
         test_voxel_lithology,
-        test_voxel_organic
+        test_voxel_organic,
     ):
         modelbase = -5.0
         surface = -0.25

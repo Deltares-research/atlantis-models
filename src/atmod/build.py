@@ -1,23 +1,23 @@
-import numpy as np
-import xarray as xr
 from pathlib import WindowsPath
 from typing import TypeVar
 
-from atmod.base import Raster, VoxelModel, Mapping, AtlansParameters, AtlansStrat
+import numpy as np
+import xarray as xr
+
+from atmod.base import AtlansParameters, AtlansStrat, Mapping, Raster, VoxelModel
 from atmod.bro_models import BroBodemKaart
 from atmod.merge import combine_data_sources
 from atmod.preprocessing import (
     NumbaDicts,
-    soilmap_to_raster,
     map_geotop_strat,
     map_nl3d_strat,
+    soilmap_to_raster,
 )
 from atmod.templates import build_template, dask_output_model_like
-from atmod.utils import find_overlapping_areas, COMPRESSION
+from atmod.utils import COMPRESSION, find_overlapping_areas
 from atmod.warnings import suppress_warnings
 
-
-BodemKaartDicts = TypeVar('BodemKaartDicts')
+BodemKaartDicts = TypeVar("BodemKaartDicts")
 
 
 def get_2d_template_like(model: Raster | VoxelModel) -> Raster:
@@ -31,7 +31,7 @@ def get_2d_template_like(model: Raster | VoxelModel) -> Raster:
 
 @suppress_warnings(RuntimeWarning)
 def _calc_rho_bulk(voxelmodel, parameters):
-    organic = voxelmodel['mass_fraction_organic']
+    organic = voxelmodel["mass_fraction_organic"]
     rho_bulk = (100 / organic) * (1 - np.exp(-organic / 0.12))
     rho_bulk = rho_bulk.fillna(parameters.rho_bulk).where(voxelmodel.isvalid)
     return rho_bulk
@@ -39,11 +39,11 @@ def _calc_rho_bulk(voxelmodel, parameters):
 
 def calculate_domainbase(voxelmodel, parameters):
     thickness_holocene = np.nansum(
-        voxelmodel['thickness'].where(voxelmodel['geology'] == AtlansStrat.holocene),
+        voxelmodel["thickness"].where(voxelmodel["geology"] == AtlansStrat.holocene),
         axis=2,
     )
     surface_level_voxels = parameters.modelbase + np.nansum(
-        voxelmodel['thickness'], axis=2
+        voxelmodel["thickness"], axis=2
     )
     domainbase = surface_level_voxels - thickness_holocene
     domainbase[thickness_holocene == 0] = np.nan
@@ -52,24 +52,24 @@ def calculate_domainbase(voxelmodel, parameters):
 
 def create_atlantis_variables(voxelmodel, parameters, glg=None):
     if glg is not None:
-        voxelmodel['phreatic_level'] = (glg.dims, glg.values)
+        voxelmodel["phreatic_level"] = (glg.dims, glg.values)
 
-    voxelmodel['rho_bulk'] = _calc_rho_bulk(voxelmodel, parameters)
-    voxelmodel['zbase'] = xr.full_like(
-        voxelmodel['surface_level'], parameters.modelbase
+    voxelmodel["rho_bulk"] = _calc_rho_bulk(voxelmodel, parameters)
+    voxelmodel["zbase"] = xr.full_like(
+        voxelmodel["surface_level"], parameters.modelbase
     )
 
-    voxelmodel['max_oxidation_depth'] = xr.full_like(
-        voxelmodel['surface_level'], parameters.max_oxidation_depth
+    voxelmodel["max_oxidation_depth"] = xr.full_like(
+        voxelmodel["surface_level"], parameters.max_oxidation_depth
     )
-    voxelmodel['no_oxidation_thickness'] = xr.full_like(
-        voxelmodel['surface_level'], parameters.no_oxidation_thickness
+    voxelmodel["no_oxidation_thickness"] = xr.full_like(
+        voxelmodel["surface_level"], parameters.no_oxidation_thickness
     )
-    voxelmodel['no_shrinkage_thickness'] = xr.full_like(
-        voxelmodel['surface_level'], parameters.no_shrinkage_thickness
+    voxelmodel["no_shrinkage_thickness"] = xr.full_like(
+        voxelmodel["surface_level"], parameters.no_shrinkage_thickness
     )
     domainbase = calculate_domainbase(voxelmodel, parameters)
-    voxelmodel['domainbase'] = (('y', 'x'), domainbase)
+    voxelmodel["domainbase"] = (("y", "x"), domainbase)
 
     return voxelmodel
 
@@ -136,10 +136,10 @@ def build_atlantis_model(
     voxelmodel = create_atlantis_variables(voxelmodel, parameters, glg)
 
     voxelmodel = voxelmodel.ds
-    voxelmodel = voxelmodel.rename({'z': 'layer'})  # No longer a vald atmod.VoxelModel
-    voxelmodel['layer'] = np.arange(len(voxelmodel['layer'])) + 1
+    voxelmodel = voxelmodel.rename({"z": "layer"})  # No longer a vald atmod.VoxelModel
+    voxelmodel["layer"] = np.arange(len(voxelmodel["layer"])) + 1
 
-    return voxelmodel.astype('float64')
+    return voxelmodel.astype("float64")
 
 
 def build_model_in_chunks(
@@ -167,34 +167,34 @@ def build_model_in_chunks(
     model = model.map_blocks(
         _write_model_chunk,
         kwargs={
-            'ahn': ahn,
-            'geotop': geotop,
-            'nl3d': nl3d,
-            'soilmap': soilmap,
-            'soilmap_dicts': soilmap_dicts,
-            'glg': glg,
-            'parameters': parameters,
+            "ahn": ahn,
+            "geotop": geotop,
+            "nl3d": nl3d,
+            "soilmap": soilmap,
+            "soilmap_dicts": soilmap_dicts,
+            "glg": glg,
+            "parameters": parameters,
         },
         template=model,
     )
-    model = model.rename({'z': 'layer'})
-    model['layer'] = np.arange(len(model['layer'])) + 1
+    model = model.rename({"z": "layer"})
+    model["layer"] = np.arange(len(model["layer"])) + 1
 
     return model
 
 
 def _write_model_chunk(chunk, **kwargs):
 
-    xmin, xmax = chunk['x'].min(), chunk['x'].max()
-    ymin, ymax = chunk['y'].min(), chunk['y'].max()
+    xmin, xmax = chunk["x"].min(), chunk["x"].max()
+    ymin, ymax = chunk["y"].min(), chunk["y"].max()
 
-    ahn = kwargs['ahn'].select(x=slice(xmin, xmax), y=slice(ymax, ymin))
-    geotop = kwargs['geotop'].select(x=slice(xmin, xmax), y=slice(ymax, ymin))
-    nl3d = kwargs['nl3d'].select(x=slice(xmin, xmax), y=slice(ymax, ymin))
-    soilmap = kwargs['soilmap'].select(x=slice(xmin, xmax), y=slice(ymax, ymin))
-    glg = kwargs['glg'].select(x=slice(xmin, xmax), y=slice(ymax, ymin))
-    soilmap_dicts = kwargs['soilmap_dicts']
-    params = kwargs['parameters']
+    ahn = kwargs["ahn"].select(x=slice(xmin, xmax), y=slice(ymax, ymin))
+    geotop = kwargs["geotop"].select(x=slice(xmin, xmax), y=slice(ymax, ymin))
+    nl3d = kwargs["nl3d"].select(x=slice(xmin, xmax), y=slice(ymax, ymin))
+    soilmap = kwargs["soilmap"].select(x=slice(xmin, xmax), y=slice(ymax, ymin))
+    glg = kwargs["glg"].select(x=slice(xmin, xmax), y=slice(ymax, ymin))
+    soilmap_dicts = kwargs["soilmap_dicts"]
+    params = kwargs["parameters"]
 
     geotop = map_geotop_strat(geotop)
     nl3d = map_nl3d_strat(nl3d)

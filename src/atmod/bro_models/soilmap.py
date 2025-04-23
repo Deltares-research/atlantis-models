@@ -1,34 +1,40 @@
+from pathlib import Path, WindowsPath
+from typing import NamedTuple, Union
+
+import geopandas as gpd
 import numpy as np
 import pandas as pd
-import geopandas as gpd
-from pathlib import Path, WindowsPath
-from typing import Union, NamedTuple
+
 from atmod.base import Mapping
 from atmod.utils import create_connection
 
 
 class BodemKaartLayers(NamedTuple):
-    SOILAREA = 'soilarea'
-    AREAOFPEDOLOGICALINTEREST = 'areaofpedologicalinterest'
-    NGA_PROPERTIES = 'nga_properties'
-    SOILMAP = 'soilmap'
-    NORMALSOILPROFILES = 'normalsoilprofiles'
-    NORMALSOILPROFILES_LANDUSE = 'normalsoilprofiles_landuse'
-    SOILHORIZON = 'soilhorizon'
-    SOILHORIZON_FRACTIONPARTICLESIZE = 'soilhorizon_fractionparticlesize'
-    SOILLAYER = 'soillayer'
-    SOIL_UNITS = 'soil_units'
-    SOILCHARACTERISTICS_BOTTOMLAYER = 'soilcharacteristics_bottomlayer'
-    SOILCHARACTERISTICS_TOPLAYER = 'soilcharacteristics_toplayer'
-    SOILAREA_NORMALSOILPROFILE = 'soilarea_normalsoilprofile'
-    SOILAREA_SOILUNIT = 'soilarea_soilunit'
-    SOILAREA_SOILUNIT_SOILCHARACTERISTICSTOPLAYER = 'soilarea_soilunit_soilcharacteristicstoplayer'  # noqa: E501
-    SOILAREA_SOILUNIT_SOILCHARACTERISTICSBOTTOMLAYER = 'soilarea_soilunit_soilcharacteristicsbottomlayer'  # noqa: E501
+    SOILAREA = "soilarea"
+    AREAOFPEDOLOGICALINTEREST = "areaofpedologicalinterest"
+    NGA_PROPERTIES = "nga_properties"
+    SOILMAP = "soilmap"
+    NORMALSOILPROFILES = "normalsoilprofiles"
+    NORMALSOILPROFILES_LANDUSE = "normalsoilprofiles_landuse"
+    SOILHORIZON = "soilhorizon"
+    SOILHORIZON_FRACTIONPARTICLESIZE = "soilhorizon_fractionparticlesize"
+    SOILLAYER = "soillayer"
+    SOIL_UNITS = "soil_units"
+    SOILCHARACTERISTICS_BOTTOMLAYER = "soilcharacteristics_bottomlayer"
+    SOILCHARACTERISTICS_TOPLAYER = "soilcharacteristics_toplayer"
+    SOILAREA_NORMALSOILPROFILE = "soilarea_normalsoilprofile"
+    SOILAREA_SOILUNIT = "soilarea_soilunit"
+    SOILAREA_SOILUNIT_SOILCHARACTERISTICSTOPLAYER = (
+        "soilarea_soilunit_soilcharacteristicstoplayer"  # noqa: E501
+    )
+    SOILAREA_SOILUNIT_SOILCHARACTERISTICSBOTTOMLAYER = (
+        "soilarea_soilunit_soilcharacteristicsbottomlayer"  # noqa: E501
+    )
 
 
 class BodemKaartColumns(NamedTuple):
-    AREAID = 'maparea_id'
-    PROFILEID = 'normalsoilprofile_id'
+    AREAID = "maparea_id"
+    PROFILEID = "normalsoilprofile_id"
 
 
 class BroBodemKaart(Mapping):
@@ -51,6 +57,7 @@ class BroBodemKaart(Mapping):
     >>> soilmap = BroBodemKaart.from_geopackage(path_to_geopackage)
 
     """
+
     def __init__(self, gdf, connection=None):
         Mapping.__init__(self, gdf)
         self.connection = connection
@@ -63,15 +70,21 @@ class BroBodemKaart(Mapping):
         self.normal_soilprofiles = BodemKaartLayers.NORMALSOILPROFILES
         self.normal_soilprofiles_landuse = BodemKaartLayers.NORMALSOILPROFILES_LANDUSE
         self.soilhorizon = BodemKaartLayers.SOILHORIZON
-        self.soilhorizon_fraction_particlesize = BodemKaartLayers.SOILHORIZON_FRACTIONPARTICLESIZE  # noqa: E501
+        self.soilhorizon_fraction_particlesize = (
+            BodemKaartLayers.SOILHORIZON_FRACTIONPARTICLESIZE
+        )  # noqa: E501
         self.soillayer = BodemKaartLayers.SOILLAYER
         self.soil_units = BodemKaartLayers.SOIL_UNITS
         self.soil_characteristics_bot = BodemKaartLayers.SOILCHARACTERISTICS_BOTTOMLAYER
         self.soil_characteristics_top = BodemKaartLayers.SOILCHARACTERISTICS_TOPLAYER
         self.soilarea_normal_soilprofile = BodemKaartLayers.SOILAREA_NORMALSOILPROFILE
         self.soilarea_soilunit = BodemKaartLayers.SOILAREA_SOILUNIT
-        self.soilarea_soilunit_characteristics_top = BodemKaartLayers.SOILAREA_SOILUNIT_SOILCHARACTERISTICSTOPLAYER  # noqa: E501
-        self.soilarea_soilunit_characteristics_bot = BodemKaartLayers.SOILAREA_SOILUNIT_SOILCHARACTERISTICSBOTTOMLAYER  # noqa: E501
+        self.soilarea_soilunit_characteristics_top = (
+            BodemKaartLayers.SOILAREA_SOILUNIT_SOILCHARACTERISTICSTOPLAYER
+        )  # noqa: E501
+        self.soilarea_soilunit_characteristics_bot = (
+            BodemKaartLayers.SOILAREA_SOILUNIT_SOILCHARACTERISTICSBOTTOMLAYER
+        )  # noqa: E501
 
     @classmethod
     def from_geopackage(cls, gpkg_path: str | WindowsPath, **gpd_kwargs):
@@ -98,7 +111,7 @@ class BroBodemKaart(Mapping):
     def get_cursor(self):
         return self.connection.cursor()
 
-    def get_column_names(self, table : str) -> list:
+    def get_column_names(self, table: str) -> list:
         """
         Get the column names of a table in the BRO Bodemkaart geopackage.
 
@@ -134,7 +147,7 @@ class BroBodemKaart(Mapping):
 
         """
         cursor = self.get_cursor()
-        cursor.execute(f'SELECT * FROM {table} LIMIT 5')
+        cursor.execute(f"SELECT * FROM {table} LIMIT 5")
         data = cursor.fetchall()
         return pd.DataFrame(data, columns=self.get_column_names(table))
 
@@ -168,13 +181,13 @@ class BroBodemKaart(Mapping):
 
         map_id = BodemKaartColumns.AREAID
         join_key = BodemKaartColumns.PROFILEID
-        left_join_key = f'{left_table}.{join_key}'
-        right_join_key = f'{right_table}.{join_key}'
+        left_join_key = f"{left_table}.{join_key}"
+        right_join_key = f"{right_table}.{join_key}"
 
         query = (
-            f'SELECT {left_table}.{map_id}, {right_table}.* '
-            f'FROM {left_table} '
-            f'JOIN {right_table} ON {left_join_key}={right_join_key}'
+            f"SELECT {left_table}.{map_id}, {right_table}.* "
+            f"FROM {left_table} "
+            f"JOIN {right_table} ON {left_join_key}={right_join_key}"
         )
         cursor = self.get_cursor()
         cursor.execute(query)

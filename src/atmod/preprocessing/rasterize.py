@@ -1,7 +1,8 @@
+from pathlib import WindowsPath
+
 import geopandas as gpd
 import numpy as np
 import xarray as xr
-from pathlib import WindowsPath
 from rasterio import features
 
 from atmod.base import Raster, VoxelModel
@@ -9,8 +10,8 @@ from atmod.base import Raster, VoxelModel
 
 def soilmap_to_raster(soilmap, da) -> Raster:
     gdf = soilmap.gdf
-    gdf['nr'] = gdf['maparea_id'].str.split('.', expand=True)[2].astype(int)
-    soilmap_da = rasterize_like(gdf, 'nr', da)
+    gdf["nr"] = gdf["maparea_id"].str.split(".", expand=True)[2].astype(int)
+    soilmap_da = rasterize_like(gdf, "nr", da)
     return Raster(soilmap_da, da.cellsize)
 
 
@@ -45,7 +46,7 @@ def rasterize_like(
     if isinstance(shapefile, (str, WindowsPath)):
         shapefile = gpd.read_file(shapefile)
 
-    shapes = ((geom, z) for z, geom in zip(shapefile[attribute], shapefile['geometry']))
+    shapes = ((geom, z) for z, geom in zip(shapefile[attribute], shapefile["geometry"]))
 
     rasterized = features.rasterize(
         shapes=shapes,
@@ -59,10 +60,10 @@ def rasterize_like(
 
 if __name__ == "__main__":
     # TODO: Move code below to tests
-    from atmod.templates import build_template
     from atmod.bro_models import BroBodemKaart
+    from atmod.templates import build_template
 
-    path_gpkg = r'c:\Users\knaake\OneDrive - Stichting Deltares\Documents\data\dino\bro_bodemkaart.gpkg'  # noqa: E501
+    path_gpkg = r"c:\Users\knaake\OneDrive - Stichting Deltares\Documents\data\dino\bro_bodemkaart.gpkg"  # noqa: E501
     soilmap = BroBodemKaart.from_geopackage(path_gpkg)
 
     print("Build template")
@@ -73,9 +74,9 @@ if __name__ == "__main__":
     print("Read soilmap")
     map_ = soilmap.read_soilmap(bbox=(xmin, ymin, xmax, ymax))
 
-    map_['nr'] = map_['maparea_id'].str.split('.', expand=True)[2].astype(int)
+    map_["nr"] = map_["maparea_id"].str.split(".", expand=True)[2].astype(int)
 
     print("Rasterize")
-    test = rasterize_like(map_, 'nr', da)
+    test = rasterize_like(map_, "nr", da)
 
     print(2)

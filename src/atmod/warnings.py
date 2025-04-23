@@ -1,4 +1,3 @@
-import numba
 import warnings
 from functools import wraps
 

@@ -33,14 +33,14 @@ def surcharge_like(
         Surcharge dataset.
 
     """  # noqa: E501
-    xshape, yshape = len(other['x']), len(other['y'])
+    xshape, yshape = len(other["x"]), len(other["y"])
 
-    times, ntimes = _get_dim_input(times.astype('datetime64[ns]'))
+    times, ntimes = _get_dim_input(times.astype("datetime64[ns]"))
     lithology, nlayers = _get_dim_input(lithology)
     thickness, _nlayers = _get_dim_input(thickness)
 
     if nlayers != _nlayers:
-        raise ValueError('lithology and thickness must have the same number of layers')
+        raise ValueError("lithology and thickness must have the same number of layers")
 
     layers = np.arange(nlayers) + 1
 
@@ -48,15 +48,15 @@ def surcharge_like(
     thickness = _repeat(thickness, ntimes, nlayers, yshape, xshape)
 
     data = dict(
-        lithology=(['time', 'layer', 'y', 'x'], lithology),
-        thickness=(['time', 'layer', 'y', 'x'], thickness),
+        lithology=(["time", "layer", "y", "x"], lithology),
+        thickness=(["time", "layer", "y", "x"], thickness),
     )
 
     coords = dict(
-        time=(['time'], times),
-        layer=(['layer'], layers),
-        y=(['y'], other['y'].values),
-        x=(['x'], other['x'].values),
+        time=(["time"], times),
+        layer=(["layer"], layers),
+        y=(["y"], other["y"].values),
+        x=(["x"], other["x"].values),
     )
 
     return xr.Dataset(data, coords)
@@ -92,20 +92,20 @@ def stage_indexation_from(
         Stage indexation dataset.
 
     """
-    weir_areas = weir_areas.sel(x=like['x'], y=like['y'], method='nearest')
+    weir_areas = weir_areas.sel(x=like["x"], y=like["y"], method="nearest")
 
-    times, ntimes = _get_dim_input(times.astype('datetime64[ns]'))
+    times, ntimes = _get_dim_input(times.astype("datetime64[ns]"))
     weir_areas = repeat_in_time(weir_areas, ntimes)
 
     if isinstance(factor, (int, float)):
-        factor = np.full_like(weir_areas, factor, dtype='float64')
+        factor = np.full_like(weir_areas, factor, dtype="float64")
     else:
         factor = repeat_in_time(factor, ntimes)
 
     data = dict(
-        weir_area=(['time', 'y', 'x'], weir_areas), factor=(['time', 'y', 'x'], factor)
+        weir_area=(["time", "y", "x"], weir_areas), factor=(["time", "y", "x"], factor)
     )
-    coords = dict(time=times, y=like['y'], x=like['x'])
+    coords = dict(time=times, y=like["y"], x=like["x"])
 
     return xr.Dataset(data, coords)
 

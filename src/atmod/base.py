@@ -1,15 +1,16 @@
-import rasterio
-import numpy as np
-import rioxarray as rio
-import xarray as xr
 from abc import ABC, abstractmethod
 from pathlib import WindowsPath
 from typing import Optional
+
+import numpy as np
+import rasterio
+import rioxarray as rio
+import xarray as xr
 from rasterio.crs import CRS
 from rasterio.enums import Resampling
 from shapely.geometry import box
 
-from atmod.utils import sample_along_line, LineString
+from atmod.utils import LineString, sample_along_line
 
 
 class AtlansParameters:
@@ -27,7 +28,7 @@ class AtlansParameters:
     ):
         self.modelbase = float(modelbase)
 
-        if modeltop == 'infer' or modeltop is None:
+        if modeltop == "infer" or modeltop is None:
             self.modeltop = modeltop
         elif isinstance(modeltop, (int, float)):
             self.modeltop = float(modeltop)
@@ -45,10 +46,10 @@ class AtlansParameters:
         self.no_shrinkage_thickness = float(no_shrinkage_thickness)
 
     def __str__(self):
-        params = [f'{k}: {v}' for k, v in self.__dict__.items()]
+        params = [f"{k}: {v}" for k, v in self.__dict__.items()]
         instance = self.__class__.__name__
-        params = '\n\t'.join(params)
-        return f'{instance}:\n\t{params}'
+        params = "\n\t".join(params)
+        return f"{instance}:\n\t{params}"
 
     @classmethod
     def from_inifile(cls):
@@ -110,10 +111,10 @@ class Raster(Spatial):
             self.ds.rio.write_crs(crs)
 
     def __repr__(self):
-        instance = f'atmod.{self.__class__.__name__}'
-        dimensions = f'Dimensions: {dict(self.ds.sizes)}'
-        resolution = f'Resolution (y, x): {self.cellsize, self.cellsize}'
-        return f'{instance}\n{dimensions}\n{resolution}'
+        instance = f"atmod.{self.__class__.__name__}"
+        dimensions = f"Dimensions: {dict(self.ds.sizes)}"
+        resolution = f"Resolution (y, x): {self.cellsize, self.cellsize}"
+        return f"{instance}\n{dimensions}\n{resolution}"
 
     @classmethod
     def from_tif(cls, tif_path, bbox=None):
@@ -130,11 +131,11 @@ class Raster(Spatial):
 
     @property
     def xcoords(self):
-        return self.ds['x'].values
+        return self.ds["x"].values
 
     @property
     def ycoords(self):
-        return self.ds['y'].values
+        return self.ds["y"].values
 
     @property
     def coords(self) -> dict:
@@ -277,11 +278,11 @@ class VoxelModel(Raster):
         self.epsg = epsg
 
     def __repr__(self):
-        instance = f'atmod.{self.__class__.__name__}'
+        instance = f"atmod.{self.__class__.__name__}"
         layers = self.ds.data_vars
-        dimensions = f'Dimensions: {dict(self.ds.sizes)}'
-        resolution = f'Resolution (y, x, z): {self.cellsize, self.cellsize, self.dz}'
-        return f'{instance}\n{layers}\n{dimensions}\n{resolution}'
+        dimensions = f"Dimensions: {dict(self.ds.sizes)}"
+        resolution = f"Resolution (y, x, z): {self.cellsize, self.cellsize, self.dz}"
+        return f"{instance}\n{layers}\n{dimensions}\n{resolution}"
 
     def __getitem__(self, item):
         return self.ds[item]
@@ -295,7 +296,7 @@ class VoxelModel(Raster):
 
     @property
     def zcoords(self):
-        return self.ds['z'].values
+        return self.ds["z"].values
 
     @property
     def zmin(self):
@@ -329,9 +330,9 @@ class VoxelModel(Raster):
 
     @staticmethod
     def coordinates_to_cellcenters(ds, cellsize, dz):
-        ds['x'] = ds['x'] + (cellsize / 2)
-        ds['y'] = ds['y'] + (cellsize / 2)
-        ds['z'] = ds['z'] + (dz / 2)
+        ds["x"] = ds["x"] + (cellsize / 2)
+        ds["y"] = ds["y"] + (cellsize / 2)
+        ds["z"] = ds["z"] + (dz / 2)
         return ds
 
     def drop_vars(self, data_vars: str | list, inplace: bool = True):
@@ -343,19 +344,19 @@ class VoxelModel(Raster):
     def _get_raster_meta(self):
         affine = self.get_affine()
         meta = {
-            'driver': 'GTiff',
-            'dtype': 'float32',
-            'width': self.ncols,
-            'height': self.nrows,
-            'crs': CRS.from_epsg(self.epsg),
-            'nodata': np.nan,
-            'transform': affine,
-            'count': 1,
+            "driver": "GTiff",
+            "dtype": "float32",
+            "width": self.ncols,
+            "height": self.nrows,
+            "crs": CRS.from_epsg(self.epsg),
+            "nodata": np.nan,
+            "transform": affine,
+            "count": 1,
         }
         return meta
 
     def zslice_to_tiff(self, layer: str, z: int | float, outputpath: str | WindowsPath):
-        zslice = self.ds[layer].sel(z=z, method='nearest')
+        zslice = self.ds[layer].sel(z=z, method="nearest")
 
         if not self.x_ascending:
             zslice = zslice.isel(x=slice(None, None, -1))
@@ -364,7 +365,7 @@ class VoxelModel(Raster):
 
         meta = self._get_raster_meta()
 
-        with rasterio.open(outputpath, 'w', **meta) as dst:
+        with rasterio.open(outputpath, "w", **meta) as dst:
             dst.write(zslice.values, 1)
 
     @property
@@ -372,7 +373,7 @@ class VoxelModel(Raster):
         """
         2D DataArray where GeoTop contains valid voxels at y, x locations.
         """
-        if not hasattr(self, '_isvalid_area'):
+        if not hasattr(self, "_isvalid_area"):
             self.get_isvalid_area()
         return self._isvalid_area
 
@@ -392,16 +393,16 @@ class VoxelModel(Raster):
         return self._isvalid_area
 
     def get_surface_level_mask(self):
-        max_idx_valid = self._get_indices_2d(self.isvalid, 'max')
+        max_idx_valid = self._get_indices_2d(self.isvalid, "max")
         return max_idx_valid
 
-    def _get_indices_2d(self, da, which='max'):
+    def _get_indices_2d(self, da, which="max"):
         summed = np.cumsum(da.values, axis=2)
         summed[~self.isvalid.values] = -1
 
-        if which == 'max':
+        if which == "max":
             idxs = np.argmax(summed, axis=2)
-        elif which == 'min':
+        elif which == "min":
             idxs = np.argmax(summed == 1, axis=2)
         else:
             raise ValueError('"which" can only be "min" or "max".')
@@ -434,28 +435,28 @@ class VoxelModel(Raster):
         other_x = other.xcoords
         other_z = other.zcoords
 
-        sel = self.ds.sel(y=other_y, x=other_x, z=other_z, method='nearest')
-        sel = sel.assign_coords({'y': other_y, 'x': other_x, 'z': other_z})
+        sel = self.ds.sel(y=other_y, x=other_x, z=other_z, method="nearest")
+        sel = sel.assign_coords({"y": other_y, "x": other_x, "z": other_z})
         return self.__class__(sel, other.cellsize, other.dz, other.epsg)
 
     def select_top(self, cond):
-        idxs = self._get_indices_2d(cond, which='max')
-        top = self['z'].values[idxs] + (0.5 * self.dz)
+        idxs = self._get_indices_2d(cond, which="max")
+        top = self["z"].values[idxs] + (0.5 * self.dz)
         top[(~self.isvalid_area) | (idxs == -1)] = np.nan
 
         top = xr.DataArray(
-            top, coords={'y': self.ycoords, 'x': self.xcoords}, dims=('y', 'x')
+            top, coords={"y": self.ycoords, "x": self.xcoords}, dims=("y", "x")
         )
 
         return Raster(top, self.cellsize, self.epsg)
 
     def select_bottom(self, cond):
-        idxs = self._get_indices_2d(cond, which='min')
-        bottom = self['z'].values[idxs] - (0.5 * self.dz)
+        idxs = self._get_indices_2d(cond, which="min")
+        bottom = self["z"].values[idxs] - (0.5 * self.dz)
         bottom[(~self.isvalid_area) | (idxs == -1)] = np.nan
 
         bottom = xr.DataArray(
-            bottom, coords={'y': self.ycoords, 'x': self.xcoords}, dims=('y', 'x')
+            bottom, coords={"y": self.ycoords, "x": self.xcoords}, dims=("y", "x")
         )
 
         return Raster(bottom, self.cellsize, self.epsg)
@@ -509,7 +510,7 @@ class VoxelModel(Raster):
         surface_idx = self.get_surface_level_mask()
         surface = self.zcoords[surface_idx] + (0.5 * self.dz)
         surface = xr.DataArray(
-            surface, coords={'y': self.ycoords, 'x': self.xcoords}, dims=('y', 'x')
+            surface, coords={"y": self.ycoords, "x": self.xcoords}, dims=("y", "x")
         )
         return Raster(surface, self.cellsize, self.epsg)
 

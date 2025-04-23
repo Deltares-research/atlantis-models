@@ -1,6 +1,7 @@
-import requests
-from typing import Union
 from pathlib import Path, WindowsPath
+from typing import Union
+
+import requests
 
 
 def bro_bodemkaart_geopackage(outputfile: Union[str, WindowsPath]):
@@ -19,14 +20,14 @@ def bro_bodemkaart_geopackage(outputfile: Union[str, WindowsPath]):
 
     """
     print("Download BRO Bodemkaart.")
-    if Path(outputfile).suffix != '.gpkg':
+    if Path(outputfile).suffix != ".gpkg":
         raise ValueError('Outputfile must be a GeoPackage (".gpkg")')
 
-    bodemkaart_url = r'https://service.pdok.nl/bzk/bro-bodemkaart/atom/downloads/BRO_DownloadBodemkaart.gpkg'
+    bodemkaart_url = r"https://service.pdok.nl/bzk/bro-bodemkaart/atom/downloads/BRO_DownloadBodemkaart.gpkg"
     response = requests.get(bodemkaart_url)
 
     if response.status_code == 200:
-        with open(outputfile, 'wb') as gpkg:
+        with open(outputfile, "wb") as gpkg:
             print("Write GeoPackage.")
             gpkg.write(response.content)
     else:
