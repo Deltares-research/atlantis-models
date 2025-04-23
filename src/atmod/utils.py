@@ -1,5 +1,6 @@
+import functools
 import sqlite3
-from pathlib import WindowsPath
+from pathlib import Path
 from typing import TypeVar
 
 import numpy as np
@@ -27,7 +28,7 @@ COMPRESSION = {
 }
 
 
-def create_connection(database: str | WindowsPath):
+def create_connection(database: str | Path):
     """
     Create a database connection to an SQLite database.
 
@@ -241,3 +242,17 @@ def find_overlapping_areas(ahn=None, geotop=None, nl3d=None, glg=None):
         np.min(bounds[:, 3]),
     )
     return overlapping_bounds
+
+
+def check_dims(func):
+    @functools.wraps(func)
+    def wrapper(ds):
+        required_dims = {"y", "x", "z"}
+        if not required_dims.issubset(ds.dims):
+            raise ValueError(
+                f"Dataset must contain dimensions {required_dims}, "
+                f"but found {ds.dims}."
+            )
+        return func(ds)
+
+    return wrapper

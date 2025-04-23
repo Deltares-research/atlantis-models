@@ -1,4 +1,4 @@
-from pathlib import Path, WindowsPath
+from pathlib import Path
 from typing import NamedTuple, Union
 
 import geopandas as gpd
@@ -87,14 +87,14 @@ class BroBodemKaart(Mapping):
         )  # noqa: E501
 
     @classmethod
-    def from_geopackage(cls, gpkg_path: str | WindowsPath, **gpd_kwargs):
+    def from_geopackage(cls, gpkg_path: str | Path, **gpd_kwargs):
         """
         Read the geopackage of the BRO Bodemkaart with a working sqlite3 connection
         to all the layers in the geopackage.
 
         Parameters
         ----------
-        gpkg_path : str | WindowsPath
+        gpkg_path : str | Path
             Path to the geopackage.
         **gpd_kwargs
             See geopandas.read_file documentation.

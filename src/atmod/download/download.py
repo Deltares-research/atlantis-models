@@ -1,21 +1,21 @@
-from pathlib import Path, WindowsPath
+from pathlib import Path
 from typing import Union
 
 import requests
 
 
-def bro_bodemkaart_geopackage(outputfile: Union[str, WindowsPath]):
+def bro_bodemkaart_geopackage(outputfile: Union[str, Path]):
     """
     Download the BRO Bodemkaart as a geopackage from PDOK.
 
     Parameters
     ----------
-    outputfile : Union[str, WindowsPath]
+    outputfile : Union[str, Path]
         Path + filename to write the geopackage to. Ouput extension must be '.gpkg'.
 
     Returns
     -------
-    outputfile : Union[str, WindowsPath]
+    outputfile : Union[str, Path]
         Path to the geopackage.
 
     """

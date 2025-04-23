@@ -1,4 +1,4 @@
-from pathlib import WindowsPath
+from pathlib import Path
 from typing import Optional, TypeVar
 
 import numpy as np
@@ -14,7 +14,7 @@ class GeoTop(VoxelModel):
     @classmethod
     def from_netcdf(
         cls,
-        nc_path: str | WindowsPath,
+        nc_path: str | Path,
         data_vars: ArrayLike = None,
         bbox: tuple = None,
         lazy: bool = True,
@@ -26,7 +26,7 @@ class GeoTop(VoxelModel):
 
         Parameters
         ----------
-        nc_path : str | WindowsPath
+        nc_path : str | Path
             Path to the netcdf file of GeoTop.
         data_vars : ArrayLike
             List or array-like object specifying which data variables to return.
@@ -108,7 +108,7 @@ class Nl3d(VoxelModel):
     @classmethod
     def from_netcdf(
         cls,
-        nc_path: str | WindowsPath,
+        nc_path: str | Path,
         data_vars: ArrayLike = None,
         bbox: tuple = None,
         lazy: bool = True,
@@ -120,7 +120,7 @@ class Nl3d(VoxelModel):
 
         Parameters
         ----------
-        nc_path : str | WindowsPath
+        nc_path : str | Path
             Path to the netcdf file of NL3D.
         data_vars : ArrayLike
             List or array-like object specifying which data variables to return.

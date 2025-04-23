@@ -1,4 +1,4 @@
-from pathlib import WindowsPath
+from pathlib import Path
 
 import geopandas as gpd
 import numpy as np
@@ -16,7 +16,7 @@ def soilmap_to_raster(soilmap, da) -> Raster:
 
 
 def rasterize_like(
-    shapefile: str | WindowsPath | gpd.GeoDataFrame,
+    shapefile: str | Path | gpd.GeoDataFrame,
     attribute: str,
     da: Raster | VoxelModel,
 ):
@@ -26,7 +26,7 @@ def rasterize_like(
 
     Parameters
     ----------
-    shapefile : str | WindowsPath | gpd.GeoDataFrame
+    shapefile : str | Path | gpd.GeoDataFrame
         Input shapefile to rasterize. Can be a path to the shapefile or an in
         memory GeoDataFrame.
     attribute : str
@@ -43,7 +43,7 @@ def rasterize_like(
         DataArray of the rasterized shapefile.
 
     """
-    if isinstance(shapefile, (str, WindowsPath)):
+    if isinstance(shapefile, (str, Path)):
         shapefile = gpd.read_file(shapefile)
 
     shapes = ((geom, z) for z, geom in zip(shapefile[attribute], shapefile["geometry"]))

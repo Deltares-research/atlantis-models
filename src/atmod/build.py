@@ -1,4 +1,4 @@
-from pathlib import WindowsPath
+from pathlib import Path
 from typing import TypeVar
 
 import numpy as np
@@ -154,7 +154,7 @@ def build_model_in_chunks(
     if parameters is None:
         parameters = AtlansParameters()  # use all defaults
 
-    geotop = geotop.select(z=slice(parameters.modelbase, parameters.modeltop))
+    geotop = geotop.sel(z=slice(parameters.modelbase, parameters.modeltop))
 
     overlapping_area = find_overlapping_areas(ahn, geotop, nl3d, glg)
     geotop = geotop.select_in_bbox(overlapping_area)
@@ -188,11 +188,11 @@ def _write_model_chunk(chunk, **kwargs):
     xmin, xmax = chunk["x"].min(), chunk["x"].max()
     ymin, ymax = chunk["y"].min(), chunk["y"].max()
 
-    ahn = kwargs["ahn"].select(x=slice(xmin, xmax), y=slice(ymax, ymin))
-    geotop = kwargs["geotop"].select(x=slice(xmin, xmax), y=slice(ymax, ymin))
-    nl3d = kwargs["nl3d"].select(x=slice(xmin, xmax), y=slice(ymax, ymin))
-    soilmap = kwargs["soilmap"].select(x=slice(xmin, xmax), y=slice(ymax, ymin))
-    glg = kwargs["glg"].select(x=slice(xmin, xmax), y=slice(ymax, ymin))
+    ahn = kwargs["ahn"].sel(x=slice(xmin, xmax), y=slice(ymax, ymin))
+    geotop = kwargs["geotop"].sel(x=slice(xmin, xmax), y=slice(ymax, ymin))
+    nl3d = kwargs["nl3d"].sel(x=slice(xmin, xmax), y=slice(ymax, ymin))
+    soilmap = kwargs["soilmap"].sel(x=slice(xmin, xmax), y=slice(ymax, ymin))
+    glg = kwargs["glg"].sel(x=slice(xmin, xmax), y=slice(ymax, ymin))
     soilmap_dicts = kwargs["soilmap_dicts"]
     params = kwargs["parameters"]
 

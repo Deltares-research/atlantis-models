@@ -1,6 +1,5 @@
-from abc import ABC, abstractmethod
-from pathlib import WindowsPath
-from typing import Optional
+from pathlib import Path
+from typing import Iterable, Optional
 
 import numpy as np
 import rasterio
@@ -10,7 +9,12 @@ from rasterio.crs import CRS
 from rasterio.enums import Resampling
 from shapely.geometry import box
 
-from atmod.utils import LineString, sample_along_line
+from atmod.mixins import XarrayMixin
+from atmod.utils import (
+    LineString,
+    check_dims,
+    sample_along_line,
+)  # TODO: remove LineString import
 
 
 class AtlansParameters:
@@ -61,166 +65,42 @@ class AtlansStrat:
     older = 2
 
 
-class Spatial(ABC):
-    """
-    Abstract base class for spatial objects.
-    """
-
-    @property
-    @abstractmethod
-    def bounds(self):
-        pass
-
-    @property
-    @abstractmethod
-    def xmin(self):
-        pass
-
-    @property
-    @abstractmethod
-    def xmax(self):
-        pass
-
-    @property
-    @abstractmethod
-    def ymin(self):
-        pass
-
-    @property
-    @abstractmethod
-    def ymax(self):
-        pass
-
-    @property
-    @abstractmethod
-    def crs(self):
-        pass
-
-
-class Raster(Spatial):
-    def __init__(
-        self,
-        ds: xr.DataArray,
-        cellsize: int | float,
-        crs: str | int | CRS = None,
-    ):
+class Raster(XarrayMixin):
+    def __init__(self, ds: xr.DataArray):
         self.ds = ds
-        self.cellsize = cellsize
-
-        if crs is not None:
-            self.ds.rio.write_crs(crs)
+        self._xdim = ds.rio._x_dim
+        self._ydim = ds.rio._y_dim
 
     def __repr__(self):
         instance = f"atmod.{self.__class__.__name__}"
         dimensions = f"Dimensions: {dict(self.ds.sizes)}"
-        resolution = f"Resolution (y, x): {self.cellsize, self.cellsize}"
+        resolution = f"Resolution (x, y): {self.cellsize}"
         return f"{instance}\n{dimensions}\n{resolution}"
+
+    def __getitem__(self, item):
+        return self.ds[item]
 
     @classmethod
     def from_tif(cls, tif_path, bbox=None):
-        ds = rio.open_rasterio(tif_path)
-        ds = ds.sel(band=1)
-        xres, _ = ds.rio.resolution()
-        crs = ds.rio.crs
+        ds = rio.open_rasterio(tif_path).squeeze(drop=True)
 
         if bbox is not None:
             xmin, ymin, xmax, ymax = bbox
             ds = ds.sel(x=slice(xmin, xmax), y=slice(ymax, ymin))
 
-        return cls(ds, xres, crs)
+        return cls(ds)
 
     @property
-    def xcoords(self):
-        return self.ds["x"].values
-
-    @property
-    def ycoords(self):
-        return self.ds["y"].values
-
-    @property
-    def coords(self) -> dict:
-        return self.ds.coords
-
-    @property
-    def dims(self) -> tuple:
-        return self.ds.dims
-
-    @property
-    def nrows(self) -> int:
-        return len(self.ycoords)
-
-    @property
-    def ncols(self) -> int:
-        return len(self.xcoords)
-
-    @property
-    def shape(self):
-        return self.nrows, self.ncols
-
-    @property
-    def xmin(self):
-        xmin = np.min(self.xcoords)
-        return xmin - (0.5 * self.cellsize)
-
-    @property
-    def xmax(self):
-        xmax = np.max(self.xcoords)
-        return xmax + (0.5 * self.cellsize)
-
-    @property
-    def ymin(self):
-        ymin = np.min(self.ycoords)
-        return ymin - (0.5 * self.cellsize)
-
-    @property
-    def ymax(self):
-        ymax = np.max(self.ycoords)
-        return ymax + (0.5 * self.cellsize)
-
-    @property
-    def bounds(self):
-        return self.xmin, self.ymin, self.xmax, self.ymax
-
-    @property
-    def crs(self):
-        return self.ds.rio.crs
+    def shape(self) -> tuple:
+        return self.ds.shape
 
     @property
     def x_ascending(self):
-        return self.xcoords[-1] > self.xcoords[0]
+        return self[self._xdim][-1] > self[self._xdim][0]
 
     @property
     def y_ascending(self):
-        return self.ycoords[-1] > self.ycoords[0]
-
-    @property
-    def dtype(self):
-        return self.ds.dtype
-
-    @property
-    def values(self):
-        return self.ds.values
-
-    def select(self, indexers: Optional[dict] = None, **xr_kwargs):
-        """
-        Return a new object instance whose data is given by selecting index
-        labels along the specified dimension(s).
-
-        Parameters
-        ----------
-        indexers : Optional[dict], optional
-            A dict with keys matching dimensions and values given
-            by scalars, slices or arrays of tick labels. For dimensions with
-            multi-index, the indexer may also be a dict-like object with keys
-            matching index level names.
-
-        """
-        sel = self.ds.sel(indexers, **xr_kwargs)
-        return self.__class__(sel, self.cellsize, self.crs)
-
-    def select_idx(self, indexers: Optional[dict] = None, **xr_kwargs):
-        sel = self.ds.isel(indexers, **xr_kwargs)
-        return self.__class__(sel, self.cellsize, self.crs)
+        return self[self._ydim][-1] > self[self._ydim][0]
 
     def select_in_bbox(self, bbox):
         xmin, ymin, xmax, ymax = bbox
@@ -228,7 +108,7 @@ class Raster(Spatial):
             xmin, xmax = xmax, xmin
         if not self.y_ascending:
             ymin, ymax = ymax, ymin
-        return self.select(y=slice(ymin, ymax), x=slice(xmin, xmax))
+        return self.sel(y=slice(ymin, ymax), x=slice(xmin, xmax))
 
     def get_affine(self) -> tuple:
         """
@@ -265,17 +145,10 @@ class Raster(Spatial):
         self.ds.rio.to_raster(outputpath, **rio_kwargs)
 
 
-class VoxelModel(Raster):
-    def __init__(
-        self,
-        ds: xr.Dataset,
-        cellsize: int | float,
-        dz: int | float,
-        epsg: str | int | CRS = None,
-    ):
-        Raster.__init__(self, ds, cellsize, None)
-        self.dz = dz
-        self.epsg = epsg
+class VoxelModel(XarrayMixin):
+    def __init__(self, ds: xr.Dataset):
+        self._ds = ds
+        self._dz = np.abs(np.diff(self["z"])[0])
 
     def __repr__(self):
         instance = f"atmod.{self.__class__.__name__}"
@@ -291,42 +164,132 @@ class VoxelModel(Raster):
         self.ds[key] = item
 
     @classmethod
-    def from_tif(cls, *_):
-        raise NotImplementedError("Cannot create VoxelModel from tif.")
+    def from_netcdf(
+        cls,
+        nc_path: str | Path,
+        data_vars: Iterable[str] = None,
+        bbox: tuple[float, float, float, float] = None,
+        lazy: bool = True,
+        **xr_kwargs,
+    ):
+        """
+        Read data from a NetCDF file of a voxelmodel data into a VoxelModel instance.
+
+        This assumes the voxelmodel is according to the following conventions:
+        - The coordinate dimensions of the voxelmodel are: "x", "y" (horizontal) and "z"
+        (depth).
+        - The coordinates in the y-dimension are in descending order.
+
+        Parameters
+        ----------
+        nc_path : str | Path
+            Path to the netcdf file of the voxelmodel.
+        data_vars : ArrayLike
+            List or array-like object specifying which data variables to return.
+        bbox : tuple (xmin, ymin, xmax, ymax), optional
+            Specify a bounding box (xmin, ymin, xmax, ymax) to return a selected area of
+            the voxelmodel. The default is None.
+        lazy : bool, optional
+            If True, netcdf loads lazily. Use False for speed improvements for larger
+            areas but that still fit into memory. The default is False.
+        **xr_kwargs
+            Additional keyword arguments xarray.open_dataset. See relevant documentation
+            for details.
+
+        Returns
+        -------
+        VoxelModel
+            VoxelModel instance of the netcdf file.
+
+        Examples
+        --------
+        Read all model data from a local NetCDF file:
+
+        >>> VoxelModel.from_netcdf("my_netcdf_file.nc")
+
+        Read specific data variables and the data within a specific area from the NetCDF
+        file:
+
+        >>> VoxelModel.from_netcdf(
+        ...     "my_netcdf_file.nc",
+        ...     data_vars=["my_var"],
+        ...     bbox=(1, 1, 3, 3) # (xmin, ymin, xmax, ymax)
+        ... )
+
+        Note that this method assumes the y-coordinates are in descending order. For y-
+        ascending coordinates change ymin and ymax coordinates:
+
+        >>> VoxelModel.from_netcdf(
+        ...     "my_netcdf_file.nc", bbox=(1, 3, 1, 3) # (xmin, ymax, xmax, ymin)
+        ... )
+
+        """
+        ds = xr.open_dataset(nc_path, **xr_kwargs)
+
+        if bbox is not None:
+            xmin, ymin, xmax, ymax = bbox
+            ds = ds.sel(x=slice(xmin, xmax), y=slice(ymax, ymin))
+
+        if data_vars is not None:
+            ds = ds[data_vars]
+
+        if not lazy:
+            print("Load data")
+            ds = ds.load()
+
+        return cls(ds)
 
     @property
-    def zcoords(self):
-        return self.ds["z"].values
+    def ds(self):
+        return self._ds
+
+    @ds.setter
+    @check_dims
+    def ds(self, ds):
+        self._ds = ds
+
+    def _get_internal_zbounds(self):
+        self._dz = np.abs(np.diff(self["z"])[0])
+        self._zmin = np.min(self["z"].values)
+        self._zmax = np.max(self["z"].values)
+        self._zmin -= 0.5 * self._dz
+        self._zmax += 0.5 * self._dz
 
     @property
-    def zmin(self):
-        zmin = np.min(self.zcoords)
-        return zmin - (0.5 * self.dz)
+    def vertical_bounds(self) -> tuple[float, float]:
+        if not hasattr(self, "_zmin"):
+            self._get_internal_zbounds()
+        return float(self._zmin), float(self._zmax)
 
     @property
-    def zmax(self):
-        zmax = np.max(self.zcoords)
-        return zmax + (0.5 * self.dz)
+    def zmin(self) -> float:
+        return self.vertical_bounds[0]
 
     @property
-    def nz(self):
-        return len(self.zcoords)
+    def zmax(self) -> float:
+        return self.vertical_bounds[1]
 
     @property
-    def shape(self):
-        return self.nrows, self.ncols, self.nz
+    def resolution(self) -> tuple[float, float, float]:
+        """
+        Return a tuple (dy, dx, dz) of the VoxelModel resolution.
+        """
+        if not hasattr(self, "_dz"):
+            self._get_internal_zbounds()
+        dx, dy = np.abs(self.cellsize)
+        return (float(dy), float(dx), float(self._dz))
+
+    @property
+    def shape(self) -> tuple:
+        return tuple(self.sizes.values())
 
     @property
     def data_vars(self):
         return list(self.ds.data_vars.keys())
 
     @property
-    def dtype(self):
-        return self.ds.dtype
-
-    @property
     def z_ascending(self):
-        return self.zcoords[-1] > self.zcoords[0]
+        return self["z"][-1] > self["z"][0]
 
     @staticmethod
     def coordinates_to_cellcenters(ds, cellsize, dz):
@@ -355,7 +318,7 @@ class VoxelModel(Raster):
         }
         return meta
 
-    def zslice_to_tiff(self, layer: str, z: int | float, outputpath: str | WindowsPath):
+    def zslice_to_tiff(self, layer: str, z: int | float, outputpath: str | Path):
         zslice = self.ds[layer].sel(z=z, method="nearest")
 
         if not self.x_ascending:
@@ -408,27 +371,6 @@ class VoxelModel(Raster):
             raise ValueError('"which" can only be "min" or "max".')
         idxs[np.all(~da.values, axis=2)] = -1
         return idxs
-
-    def select(self, indexers: Optional[dict] = None, **xr_kwargs):
-        """
-        Return a new object instance whose data is given by selecting index
-        labels along the specified dimension(s).
-
-        Parameters
-        ----------
-        indexers : Optional[dict], optional
-            A dict with keys matching dimensions and values given
-            by scalars, slices or arrays of tick labels. For dimensions with
-            multi-index, the indexer may also be a dict-like object with keys
-            matching index level names.
-
-        """
-        sel = self.ds.sel(indexers, **xr_kwargs)
-        return self.__class__(sel, self.cellsize, self.dz, self.epsg)
-
-    def select_idx(self, indexers: Optional[dict] = None, **xr_kwargs):
-        sel = self.ds.isel(indexers, **xr_kwargs)
-        return self.__class__(sel, self.cellsize, self.dz, self.epsg)
 
     def select_like(self, other):
         other_y = other.ycoords
@@ -515,7 +457,7 @@ class VoxelModel(Raster):
         return Raster(surface, self.cellsize, self.epsg)
 
 
-class Mapping(Spatial):
+class Mapping:
     def __init__(self, gdf):
         self.gdf = gdf
 
