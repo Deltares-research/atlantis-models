@@ -147,8 +147,13 @@ class Raster(XarrayMixin):
 
 class VoxelModel(XarrayMixin):
     def __init__(self, ds: xr.Dataset):
-        self._ds = ds
-        self._dz = np.abs(np.diff(self["z"])[0])
+        required_dims = {"y", "x", "z"}
+        if not required_dims.issubset(ds.dims):
+            raise ValueError(
+                f"Dataset must contain dimensions {required_dims}, "
+                f"but found {set(ds.dims)}."
+            )
+        self.ds = ds
 
     def __repr__(self):
         instance = f"atmod.{self.__class__.__name__}"
@@ -238,15 +243,6 @@ class VoxelModel(XarrayMixin):
             ds = ds.load()
 
         return cls(ds)
-
-    @property
-    def ds(self):
-        return self._ds
-
-    @ds.setter
-    @check_dims
-    def ds(self, ds):
-        self._ds = ds
 
     def _get_internal_zbounds(self):
         self._dz = np.abs(np.diff(self["z"])[0])
