@@ -1,20 +1,19 @@
+from enum import IntEnum
+from functools import cached_property
 from pathlib import Path
-from typing import Iterable, Optional
+from typing import Iterable
 
 import numpy as np
 import rasterio
 import rioxarray as rio
 import xarray as xr
 from rasterio.crs import CRS
-from rasterio.enums import Resampling
 from shapely.geometry import box
 
 from atmod.mixins import XarrayMixin
-from atmod.utils import (
-    LineString,
-    check_dims,
-    sample_along_line,
-)  # TODO: remove LineString import
+from atmod.utils import sample_along_line
+
+type LineString = "LineString"
 
 
 class AtlansParameters:
@@ -60,7 +59,7 @@ class AtlansParameters:
         raise NotImplementedError
 
 
-class AtlansStrat:
+class AtlansStrat(IntEnum):
     holocene = 1
     older = 2
 
@@ -79,7 +78,7 @@ class VoxelModel(XarrayMixin):
         instance = f"atmod.{self.__class__.__name__}"
         layers = self.ds.data_vars
         dimensions = f"Dimensions: {dict(self.ds.sizes)}"
-        resolution = f"Resolution (y, x, z): {self.cellsize, self.cellsize, self.dz}"
+        resolution = f"Resolution (y, x, z): {self.resolution}"
         return f"{instance}\n{layers}\n{dimensions}\n{resolution}"
 
     def __getitem__(self, item):
@@ -218,58 +217,28 @@ class VoxelModel(XarrayMixin):
         if inplace:
             self.ds = self.ds.drop_vars(data_vars)
         else:
-            return self.__class__(self.ds.drop_vars(data_vars), self.cellsize, self.dz)
+            return self.__class__(self.ds.drop_vars(data_vars))
 
-    def _get_raster_meta(self):
-        affine = self.get_affine()
-        meta = {
-            "driver": "GTiff",
-            "dtype": "float32",
-            "width": self.ncols,
-            "height": self.nrows,
-            "crs": CRS.from_epsg(self.epsg),
-            "nodata": np.nan,
-            "transform": affine,
-            "count": 1,
-        }
-        return meta
-
-    def zslice_to_tiff(self, layer: str, z: int | float, outputpath: str | Path):
+    def zslice_to_tiff(
+        self, layer: str, z: int | float, outputpath: str | Path, **rio_kwargs
+    ):
         zslice = self.ds[layer].sel(z=z, method="nearest")
 
-        if not self.x_ascending:
-            zslice = zslice.isel(x=slice(None, None, -1))
-        if self.y_ascending:
-            zslice = zslice.isel(y=slice(None, None, -1))
+        if zslice.rio.crs is None:
+            zslice.rio.write_crs(self.crs, inplace=True)
 
-        meta = self._get_raster_meta()
+        zslice.rio.to_raster(outputpath, **rio_kwargs)
 
-        with rasterio.open(outputpath, "w", **meta) as dst:
-            dst.write(zslice.values, 1)
-
-    @property
-    def isvalid_area(self):
+    @cached_property
+    def valid_area(self):
         """
         2D DataArray where GeoTop contains valid voxels at y, x locations.
         """
-        if not hasattr(self, "_isvalid_area"):
-            self.get_isvalid_area()
-        return self._isvalid_area
+        return self.isvalid.any(dim="z")
 
-    @property
-    def ismissing_area(self):
-        """
-        2D DataArray where GeoTop has no data at y, x locations.
-        """
-        return ~self._isvalid_area
-
-    @property
+    @cached_property
     def isvalid(self):
-        return ~np.isnan(self.ds[self.data_vars[0]])
-
-    def get_isvalid_area(self):
-        self._isvalid_area = np.any(self.isvalid, axis=2)
-        return self._isvalid_area
+        return self.ds[self.data_vars[0]].notnull()
 
     def get_surface_level_mask(self):
         max_idx_valid = self._get_indices_2d(self.isvalid, "max")
@@ -289,9 +258,9 @@ class VoxelModel(XarrayMixin):
         return idxs
 
     def select_like(self, other):
-        other_y = other['y']
-        other_x = other['x']
-        other_z = other['z']
+        other_y = other["y"]
+        other_x = other["x"]
+        other_z = other["z"]
 
         sel = self.ds.sel(y=other_y, x=other_x, z=other_z, method="nearest")
         sel = sel.assign_coords({"y": other_y, "x": other_x, "z": other_z})
@@ -300,7 +269,7 @@ class VoxelModel(XarrayMixin):
     def select_top(self, cond):
         idxs = self._get_indices_2d(cond, which="max")
         top = self["z"].values[idxs] + (0.5 * self.dz)
-        top[(~self.isvalid_area) | (idxs == -1)] = np.nan
+        top[(~self.valid_area) | (idxs == -1)] = np.nan
 
         return xr.DataArray(
             top, coords={"y": self.ycoords, "x": self.xcoords}, dims=("y", "x")
@@ -309,7 +278,7 @@ class VoxelModel(XarrayMixin):
     def select_bottom(self, cond):
         idxs = self._get_indices_2d(cond, which="min")
         bottom = self["z"].values[idxs] - (0.5 * self.dz)
-        bottom[(~self.isvalid_area) | (idxs == -1)] = np.nan
+        bottom[(~self.valid_area) | (idxs == -1)] = np.nan
 
         return xr.DataArray(
             bottom, coords={"y": self.ycoords, "x": self.xcoords}, dims=("y", "x")

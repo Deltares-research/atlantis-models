@@ -1,11 +1,9 @@
-from pathlib import Path
 from typing import TypeVar
 
 import numpy as np
 import xarray as xr
 
 from atmod.base import AtlansParameters, AtlansStrat, Mapping, VoxelModel
-from atmod.bro_models import BroBodemKaart
 from atmod.merge import combine_data_sources
 from atmod.preprocessing import (
     NumbaDicts,
@@ -13,20 +11,11 @@ from atmod.preprocessing import (
     map_nl3d_strat,
     soilmap_to_raster,
 )
-from atmod.templates import build_template, dask_output_model_like
-from atmod.utils import COMPRESSION, find_overlapping_areas
+from atmod.templates import dask_output_model_like
+from atmod.utils import find_overlapping_areas
 from atmod.warnings import suppress_warnings
 
 BodemKaartDicts = TypeVar("BodemKaartDicts")
-
-
-def get_2d_template_like(model: VoxelModel):
-    xmin_center = model.xmin + (0.5 * model.cellsize)
-    ymin_center = model.ymin + (0.5 * model.cellsize)
-
-    return build_template(
-        model.ncols, model.nrows, xmin_center, ymin_center, model.cellsize
-    )
 
 
 @suppress_warnings(RuntimeWarning)

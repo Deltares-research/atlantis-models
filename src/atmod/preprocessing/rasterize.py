@@ -11,7 +11,7 @@ from atmod.base import VoxelModel
 def soilmap_to_raster(soilmap, da):
     gdf = soilmap.gdf
     gdf["nr"] = gdf["maparea_id"].str.split(".", expand=True)[2].astype(int)
-    return rasterize_like(gdf, da, "nr")
+    return rasterize_like(gdf, da, "nr", fill=np.iinfo(np.int64).min)
 
 
 def rasterize_like(
@@ -73,27 +73,3 @@ def rasterize_like(
     )
 
     return xr.DataArray(rasterized, coords=da.coords, dims=da.dims)
-
-
-if __name__ == "__main__":
-    # TODO: Move code below to tests
-    from atmod.bro_models import BroBodemKaart
-    from atmod.templates import build_template
-
-    path_gpkg = r"c:\Users\knaake\OneDrive - Stichting Deltares\Documents\data\dino\bro_bodemkaart.gpkg"  # noqa: E501
-    soilmap = BroBodemKaart.from_geopackage(path_gpkg)
-
-    print("Build template")
-    da = build_template(50, 50, 122050, 446050, 100)
-    xmin, xmax = 120_000, 130_000
-    ymin, ymax = 440_000, 455_000
-
-    print("Read soilmap")
-    map_ = soilmap.read_soilmap(bbox=(xmin, ymin, xmax, ymax))
-
-    map_["nr"] = map_["maparea_id"].str.split(".", expand=True)[2].astype(int)
-
-    print("Rasterize")
-    test = rasterize_like(map_, "nr", da)
-
-    print(2)

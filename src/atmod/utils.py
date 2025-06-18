@@ -52,22 +52,6 @@ def create_connection(database: str | Path):
     return conn
 
 
-def get_xcoordinates(xllcenter: int | float, ncols: int, cellsize: int):
-    xmin = xllcenter
-    xmax = xmin + (ncols * cellsize)
-    return np.arange(xmin, xmax, cellsize)
-
-
-def get_ycoordinates(yllcenter: int | float, nrows: int, cellsize: int):
-    ymin = yllcenter - cellsize  # subtract cellsize to include in descending np.arange
-    ymax = ymin + (nrows * cellsize)
-    return np.arange(ymax, ymin, -cellsize)
-
-
-def get_zcoordinates(zmin: int | float, zmax: int | float, dz: int | float):
-    return np.arange(zmin, zmax + dz, dz)
-
-
 def _follow_gdal_conventions(ds):
     if "z" in ds.dims:
         ds = ds.transpose("y", "x", "z")
