@@ -5,57 +5,74 @@ import numpy as np
 import xarray as xr
 from rasterio import features
 
-from atmod.base import Raster, VoxelModel
+from atmod.base import VoxelModel
 
 
-def soilmap_to_raster(soilmap, da) -> Raster:
+def soilmap_to_raster(soilmap, da):
     gdf = soilmap.gdf
     gdf["nr"] = gdf["maparea_id"].str.split(".", expand=True)[2].astype(int)
-    soilmap_da = rasterize_like(gdf, "nr", da)
-    return Raster(soilmap_da, da.cellsize)
+    return rasterize_like(gdf, da, "nr")
 
 
 def rasterize_like(
     shapefile: str | Path | gpd.GeoDataFrame,
-    attribute: str,
-    da: Raster | VoxelModel,
+    da: xr.DataArray,
+    attribute: str = None,
+    **features_kwargs,
 ):
     """
-    Rasterize a shapefile like an atmod Raster or into the 2D extent of a VoxelModel
-    object.
+    Rasterize a shapefile like an Xarray DataArray object.
 
     Parameters
     ----------
     shapefile : str | Path | gpd.GeoDataFrame
         Input shapefile to rasterize. Can be a path to the shapefile or an in
         memory GeoDataFrame.
-    attribute : str
-        Name of the attribute in the shapefile to rasterize.
-    da : Raster | VoxelModel,
-        Atmod Raster or VoxelModel object to rasterize the shapefile like.
-    cellsize : int, optional
-        Cellsize of the output DataArray. The default is None, then the x and y
-        size will be derived from the input DataArray.
+    da : xr.DataArray,
+        DataArray to use the extent from rasterize the shapefile like.
+    attribute : str, optional
+        Name of the attribute in the shapefile to rasterize. The default is None, in
+        this case, a default value of 1 will be burnt into the DataArray.
+
+    **features_kwargs
+        See rasterio.features.rasterize docs for additional optional parameters.
 
     Returns
     -------
     xr.DataArray
         DataArray of the rasterized shapefile.
 
+    Examples
+    --------
+    Rasterize a specific attribute of a shapefile:
+    >>> rasterize_like(shapefile, da, "attribute")
+
+    Use additional `features.rasterize` options:
+    >>> rasterize_like(shapefile, da, "attribute", fill=np.nan, all_touched=True)
+
     """
+    if isinstance(da, VoxelModel):
+        da = da.ds
+
     if isinstance(shapefile, (str, Path)):
         shapefile = gpd.read_file(shapefile)
 
-    shapes = ((geom, z) for z, geom in zip(shapefile[attribute], shapefile["geometry"]))
+    if attribute:
+        shapes = (
+            (geom, z) for z, geom in zip(shapefile[attribute], shapefile["geometry"])
+        )
+    else:
+        shapes = (geom for geom in shapefile["geometry"])
+        features_kwargs["default_value"] = 1
 
     rasterized = features.rasterize(
         shapes=shapes,
-        fill=np.nan,
-        out_shape=(da.nrows, da.ncols),
-        transform=da.get_affine(),
+        out_shape=da.shape,
+        transform=da.rio.transform(),
+        **features_kwargs,
     )
-    rasterized = xr.DataArray(rasterized, coords=da.coords, dims=da.dims)
-    return rasterized
+
+    return xr.DataArray(rasterized, coords=da.coords, dims=da.dims)
 
 
 if __name__ == "__main__":

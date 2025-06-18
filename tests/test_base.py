@@ -5,44 +5,6 @@ from numpy.testing import assert_array_equal
 import atmod
 
 
-class TestRaster:
-    @pytest.mark.unittest
-    def test_raster_init(self, raster):
-        assert isinstance(raster, atmod.Raster)
-        assert isinstance(raster.ds, xr.DataArray)
-        assert raster._xdim == "x"
-        assert raster._ydim == "y"
-        assert raster.shape == (5, 5)
-        assert raster.sizes == {"y": 5, "x": 5}
-        assert raster.bounds == (0.0, 0.0, 5.0, 5.0)
-        assert raster.xmin == 0.0
-        assert raster.ymin == 0.0
-        assert raster.xmax == 5.0
-        assert raster.ymax == 5.0
-        assert raster.cellsize == (1.0, -1.0)
-        assert raster.nrows == 5
-        assert raster.ncols == 5
-        assert raster.dtype == "float64"
-        assert raster.crs == 28992
-        assert raster.x_ascending
-        assert not raster.y_ascending
-
-    @pytest.mark.unittest
-    def test_from_tif(self, raster_file):
-        raster = atmod.Raster.from_tif(raster_file)
-        assert isinstance(raster, atmod.Raster)
-        assert raster._xdim == "x"
-        assert raster._ydim == "y"
-        assert raster.shape == (5, 5)
-        assert raster.sizes == {"y": 5, "x": 5}
-        assert raster.bounds == (0.0, 0.0, 5.0, 5.0)
-
-        raster = atmod.Raster.from_tif(raster_file, bbox=(0, 0, 2, 2))
-        assert isinstance(raster, atmod.Raster)
-        assert raster.bounds == (0.0, 0.0, 2.0, 2.0)
-        assert raster.shape == (2, 2)
-
-
 class TestVoxelModel:
     @pytest.mark.unittest
     def test_voxelmodel_init(self, voxelmodel):

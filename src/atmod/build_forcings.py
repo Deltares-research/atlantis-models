@@ -1,11 +1,11 @@
 import numpy as np
 import xarray as xr
 
-from atmod.base import Raster, VoxelModel
+from atmod.base import VoxelModel
 
 
 def surcharge_like(
-    other: Raster | VoxelModel | xr.Dataset | xr.DataArray,
+    other: VoxelModel | xr.Dataset | xr.DataArray,
     lithology: int | np.ndarray,
     thickness: float | np.ndarray,
     times: np.datetime64 | np.ndarray,
@@ -18,7 +18,7 @@ def surcharge_like(
 
     Parameters
     ----------
-    other : Raster | VoxelModel | xr.Dataset | xr.DataArray
+    other : VoxelModel | xr.Dataset | xr.DataArray
         Input to base the y and x dimensions on for the surcharge dataset to create.
     lithology : int | np.array
         Lithological profile or single cell to add as a surcharge.
@@ -64,7 +64,7 @@ def surcharge_like(
 
 def stage_indexation_from(
     weir_areas: xr.DataArray,
-    like: Raster | VoxelModel | xr.DataArray | xr.Dataset,
+    like: VoxelModel | xr.DataArray | xr.Dataset,
     times: np.datetime64 | np.ndarray,
     factor: float | np.ndarray,
 ):
@@ -78,7 +78,7 @@ def stage_indexation_from(
     weir_areas : xr.DataArray
         2D DataArray with dims y,x containing weir areas over which stage indexation is
         calculated.
-    like : Raster | VoxelModel | xr.DataArray | xr.Dataset
+    like : VoxelModel | xr.DataArray | xr.Dataset
         Input to base the y and x dimensions on for the stage indexation dataset to
         create.
     times : np.datetime64 | np.ndarray

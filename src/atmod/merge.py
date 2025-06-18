@@ -2,7 +2,7 @@ import numba
 import numpy as np
 import xarray as xr
 
-from atmod.base import Raster, VoxelModel
+from atmod.base import VoxelModel
 from atmod.bro_models.geology import Lithology
 from atmod.templates import get_full_like
 
@@ -23,7 +23,7 @@ def combine_data_sources(
     if soilmap is None:
         soilmap_values = np.full(ahn.shape, TYPEMIN_INT64)
     else:
-        soilmap_values = soilmap.ds.values
+        soilmap_values = soilmap.values
 
     max_layers_soilmap = 9
     voxelmodel = _allocate_memory_for_soilmap(voxelmodel, max_layers_soilmap)
@@ -83,20 +83,21 @@ def combine_geotop_nl3d(geotop: VoxelModel, nl3d: VoxelModel) -> VoxelModel:
     else:
         combined = xr.where(geotop.isvalid_area, geotop.ds, nl3d.ds)
 
-    return VoxelModel(combined, geotop.cellsize, geotop.dz, geotop.epsg)
+    return VoxelModel(combined)
 
 
 def _allocate_memory_for_soilmap(voxelmodel, nlayers):
-    extra_zcoords = np.arange(0, voxelmodel.dz * nlayers, voxelmodel.dz) + voxelmodel.dz
-    extra_zcoords = extra_zcoords + np.max(voxelmodel.zcoords)
+    _, _, dz = voxelmodel.resolution
+    extra_zcoords = np.arange(0, dz * nlayers, dz) + dz
+    extra_zcoords += voxelmodel.zmax - 0.5 * dz
 
-    new_zcoords = np.append(voxelmodel.zcoords, extra_zcoords)
+    new_zcoords = np.append(voxelmodel["z"], extra_zcoords)
 
     voxelmodel.ds = voxelmodel.ds.reindex({"z": new_zcoords})
     return voxelmodel
 
 
-@numba.njit
+# @numba.njit
 def combine_voxels_and_soilmap(
     ahn,
     thickness,
@@ -192,7 +193,7 @@ def combine_voxels_and_soilmap(
     return thickness, geology, lithology, organic
 
 
-@numba.njit
+# @numba.njit
 def _fill_anthropogenic(thickness, geology, lithology, organic, difference):
     anthropogenic = 0.0
     idx_to_fill = _get_top_voxel_idx(thickness) + 1
@@ -204,7 +205,7 @@ def _fill_anthropogenic(thickness, geology, lithology, organic, difference):
     return thickness, geology, lithology, organic
 
 
-@numba.njit
+# @numba.njit
 def _shift_voxel_surface_down(
     thickness, geology, lithology, organic, surface, modelbase
 ):
@@ -230,7 +231,7 @@ def _shift_voxel_surface_down(
     return thickness, geology, lithology, organic
 
 
-@numba.njit
+# @numba.njit
 def _shift_voxel_surface_up(thickness, geology, lithology, organic, surface, modelbase):
     top_idx = _get_top_voxel_idx(thickness)
     extra_thickness = surface - (modelbase + np.nansum(thickness))
@@ -246,7 +247,7 @@ def _shift_voxel_surface_up(thickness, geology, lithology, organic, surface, mod
     return thickness, geology, lithology, organic
 
 
-@numba.njit
+# @numba.njit
 def _combine_with_soilprofile(
     thickness,
     geology,
@@ -306,7 +307,7 @@ def _combine_with_soilprofile(
     return thickness, geology, lithology, organic
 
 
-@numba.njit
+# @numba.njit
 def _get_top_voxel_idx(voxels):
     valid_voxels = ~np.isnan(voxels)
     if np.all(valid_voxels):
@@ -315,7 +316,7 @@ def _get_top_voxel_idx(voxels):
         return np.max(np.nonzero(valid_voxels)[0])
 
 
-@numba.njit
+# @numba.njit
 def _top_is_anthropogenic(lith):
     top_lith = lith[_get_top_voxel_idx(lith)]
     return top_lith == 0

@@ -5,7 +5,7 @@ import dask.array as darray
 import numpy as np
 import xarray as xr
 
-from atmod.base import Raster, VoxelModel
+from atmod.base import VoxelModel
 from atmod.utils import get_xcoordinates, get_ycoordinates, get_zcoordinates
 
 
@@ -122,11 +122,11 @@ def build_template(
     if "z" in template.dims:
         return VoxelModel(template, cellsize, dz)
     else:
-        return Raster(template, cellsize)
+        return template
 
 
 def get_full_like(
-    model: Union[Raster, VoxelModel],
+    model: VoxelModel,
     fill_value: float,
     invalid_value: float = None,
     dtype="float32",

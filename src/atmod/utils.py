@@ -6,8 +6,8 @@ from typing import TypeVar
 import numpy as np
 import xarray as xr
 from rasterio.crs import CRS
+from rasterio.enums import Resampling
 
-Raster = TypeVar("Raster")
 VoxelModel = TypeVar("VoxelModel")
 LineString = TypeVar("LineString")
 
@@ -169,20 +169,20 @@ def sample_along_line(
 
 
 def divide_blocks(
-    area: Raster | VoxelModel,
+    area: VoxelModel,
     ysize: int = None,
     xsize: int = None,
     real_units: bool = False,
 ):
     """
-    Divide the area of a Raster or VoxelModel object into equal blocks of a specified
+    Divide the area of a VoxelModel object into equal blocks of a specified
     'y' and 'x' size and get the bounding boxes of each block. Blocks are created
     starting from the top left corner of the area.
 
     Parameters
     ----------
-    area : Raster | VoxelModel
-        Raster or VoxelModel object to divide into blocks.
+    area : VoxelModel
+        VoxelModel object to divide into blocks.
     ysize, xsize : int, optional
         Block size in y and x direction respectively. The default is None
     real_units : bool, optional
@@ -256,3 +256,19 @@ def check_dims(func):
         return func(ds)
 
     return wrapper
+
+
+def set_cellsize(
+    da: xr.DataArray,
+    xsize: int | float,
+    ysize: int | float,
+    resampling_method=Resampling.bilinear,
+) -> xr.DataArray:
+    xres, yres = da.rio.resolution()
+    new_width = abs(int(da.rio.width * (xres / xsize)))
+    new_height = abs(int(da.rio.height * (yres / ysize)))
+
+    resampled = da.rio.reproject(
+        da.rio.crs, shape=(new_height, new_width), resampling=resampling_method
+    )
+    return resampled

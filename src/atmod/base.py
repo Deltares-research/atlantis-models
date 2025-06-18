@@ -65,85 +65,6 @@ class AtlansStrat:
     older = 2
 
 
-class Raster(XarrayMixin):
-    def __init__(self, ds: xr.DataArray):
-        self.ds = ds
-        self._xdim = ds.rio._x_dim
-        self._ydim = ds.rio._y_dim
-
-    def __repr__(self):
-        instance = f"atmod.{self.__class__.__name__}"
-        dimensions = f"Dimensions: {dict(self.ds.sizes)}"
-        resolution = f"Resolution (x, y): {self.cellsize}"
-        return f"{instance}\n{dimensions}\n{resolution}"
-
-    def __getitem__(self, item):
-        return self.ds[item]
-
-    @classmethod
-    def from_tif(cls, tif_path, bbox=None):
-        ds = rio.open_rasterio(tif_path).squeeze(drop=True)
-
-        if bbox is not None:
-            xmin, ymin, xmax, ymax = bbox
-            ds = ds.sel(x=slice(xmin, xmax), y=slice(ymax, ymin))
-
-        return cls(ds)
-
-    @property
-    def shape(self) -> tuple:
-        return self.ds.shape
-
-    @property
-    def x_ascending(self):
-        return self[self._xdim][-1] > self[self._xdim][0]
-
-    @property
-    def y_ascending(self):
-        return self[self._ydim][-1] > self[self._ydim][0]
-
-    def select_in_bbox(self, bbox):
-        xmin, ymin, xmax, ymax = bbox
-        if not self.x_ascending:
-            xmin, xmax = xmax, xmin
-        if not self.y_ascending:
-            ymin, ymax = ymax, ymin
-        return self.sel(y=slice(ymin, ymax), x=slice(xmin, xmax))
-
-    def get_affine(self) -> tuple:
-        """
-        Get an affine matrix based on the 2D extent of the data.
-
-        """
-        x_rotation, y_rotation = 0.0, 0.0
-        xsize, ysize = self.cellsize, -self.cellsize
-        return xsize, x_rotation, self.xmin, y_rotation, ysize, self.ymax
-
-    def set_cellsize(
-        self,
-        cellsize: int | float,
-        resampling_method=Resampling.bilinear,
-        inplace=False,
-    ):
-        upscale_factor = self.cellsize[0] / cellsize
-        new_width = int(self.ncols * upscale_factor)
-        new_height = int(self.nrows * upscale_factor)
-
-        ds_resampled = self.ds.rio.reproject(
-            self.crs, shape=(new_height, new_width), resampling=resampling_method
-        )
-        if inplace:
-            self.ds = ds_resampled
-        else:
-            return self.__class__(ds_resampled)
-
-    def set_crs(self, crs: str | int | CRS):
-        self.ds.rio.write_crs(crs, inplace=True)
-
-    def to_raster(self, outputpath, **rio_kwargs):
-        self.ds.rio.to_raster(outputpath, **rio_kwargs)
-
-
 class VoxelModel(XarrayMixin):
     def __init__(self, ds: xr.Dataset):
         required_dims = {"y", "x", "z"}
@@ -368,35 +289,31 @@ class VoxelModel(XarrayMixin):
         return idxs
 
     def select_like(self, other):
-        other_y = other.ycoords
-        other_x = other.xcoords
-        other_z = other.zcoords
+        other_y = other['y']
+        other_x = other['x']
+        other_z = other['z']
 
         sel = self.ds.sel(y=other_y, x=other_x, z=other_z, method="nearest")
         sel = sel.assign_coords({"y": other_y, "x": other_x, "z": other_z})
-        return self.__class__(sel, other.cellsize, other.dz, other.epsg)
+        return self.__class__(sel)
 
     def select_top(self, cond):
         idxs = self._get_indices_2d(cond, which="max")
         top = self["z"].values[idxs] + (0.5 * self.dz)
         top[(~self.isvalid_area) | (idxs == -1)] = np.nan
 
-        top = xr.DataArray(
+        return xr.DataArray(
             top, coords={"y": self.ycoords, "x": self.xcoords}, dims=("y", "x")
         )
-
-        return Raster(top, self.cellsize, self.epsg)
 
     def select_bottom(self, cond):
         idxs = self._get_indices_2d(cond, which="min")
         bottom = self["z"].values[idxs] - (0.5 * self.dz)
         bottom[(~self.isvalid_area) | (idxs == -1)] = np.nan
 
-        bottom = xr.DataArray(
+        return xr.DataArray(
             bottom, coords={"y": self.ycoords, "x": self.xcoords}, dims=("y", "x")
         )
-
-        return Raster(bottom, self.cellsize, self.epsg)
 
     def select_with_line(
         self,
@@ -446,10 +363,9 @@ class VoxelModel(XarrayMixin):
     def select_surface_level(self):
         surface_idx = self.get_surface_level_mask()
         surface = self.zcoords[surface_idx] + (0.5 * self.dz)
-        surface = xr.DataArray(
+        return xr.DataArray(
             surface, coords={"y": self.ycoords, "x": self.xcoords}, dims=("y", "x")
         )
-        return Raster(surface, self.cellsize, self.epsg)
 
 
 class Mapping:

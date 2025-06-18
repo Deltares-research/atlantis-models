@@ -4,7 +4,7 @@ from typing import TypeVar
 import numpy as np
 import xarray as xr
 
-from atmod.base import AtlansParameters, AtlansStrat, Mapping, Raster, VoxelModel
+from atmod.base import AtlansParameters, AtlansStrat, Mapping, VoxelModel
 from atmod.bro_models import BroBodemKaart
 from atmod.merge import combine_data_sources
 from atmod.preprocessing import (
@@ -20,7 +20,7 @@ from atmod.warnings import suppress_warnings
 BodemKaartDicts = TypeVar("BodemKaartDicts")
 
 
-def get_2d_template_like(model: Raster | VoxelModel) -> Raster:
+def get_2d_template_like(model: VoxelModel):
     xmin_center = model.xmin + (0.5 * model.cellsize)
     ymin_center = model.ymin + (0.5 * model.cellsize)
 
@@ -75,11 +75,11 @@ def create_atlantis_variables(voxelmodel, parameters, glg=None):
 
 
 def build_atlantis_model(
-    ahn: Raster,
+    ahn: xr.DataArray,
     geotop: VoxelModel,  # TODO: Also make input for geotop optional
     nl3d: VoxelModel = None,
     bodemkaart: Mapping = None,
-    glg: Raster = None,
+    glg: xr.DataArray = None,
     parameters: AtlansParameters = None,
 ):
     """
@@ -92,16 +92,16 @@ def build_atlantis_model(
 
     Parameters
     ----------
-    ahn : Raster
-        Raster instance with the AHN data to use for the surface level for the area
+    ahn : xr.DataArray
+        DataArray with the AHN data to use for the surface level for the area
         where the model is created for.
     geotop : VoxelModel
         VoxelModel instance with the GeoTOP 3D voxelmodel data. See atmod.bro_models.GeoTop.
     bodemkaart : Mapping, optional
         Mapping instance containing the BRO Bodemkaart data. See atmod.bro_models.BroBodemKaart.
         The default is None.
-    glg : Raster, optional
-        Optional Raster instance with the GLG data to use for the phreatic level for the area
+    glg : xr.DataArray, optional
+        Optional DataArray instance with the GLG data to use for the phreatic level for the area
         where the model is created for. The default is None, then the GLG needs to be added
         manually because a phreatic level is mandatory input for an Atlantis subsurface model.
     parameters : AtlansParameters, optional
@@ -143,11 +143,11 @@ def build_atlantis_model(
 
 
 def build_model_in_chunks(
-    ahn: Raster,
+    ahn: xr.DataArray,
     geotop: VoxelModel,
     nl3d: VoxelModel,
     bodemkaart: Mapping,
-    glg: Raster,
+    glg: xr.DataArray = None,
     parameters: AtlansParameters = None,
     chunksize: int = 250,
 ):

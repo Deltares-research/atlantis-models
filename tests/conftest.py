@@ -22,13 +22,13 @@ def raster():
         },
     )
     da.rio.write_crs(28992, inplace=True)
-    return atmod.Raster(da)
+    return da
 
 
 @pytest.fixture
 def raster_file(raster, tmp_path):
     outfile = tmp_path / "raster.tif"
-    raster.to_raster(outfile)
+    raster.rio.to_raster(outfile)
     return outfile
 
 
