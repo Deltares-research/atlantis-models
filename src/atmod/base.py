@@ -257,6 +257,26 @@ class VoxelModel(XarrayMixin):
         idxs[np.all(~da.values, axis=2)] = -1
         return idxs
 
+    def select_in_bbox(self, bbox: tuple[float, float, float, float], **rio_kwargs):
+        """
+        Select data within a bounding box defined by (xmin, ymin, xmax, ymax).
+
+        Parameters
+        ----------
+        bbox : tuple (xmin, ymin, xmax, ymax)
+            Bounding box to select data from.
+        rio_kwargs : dict, optional
+            Additional keyword arguments for rioxarray.clip_box.
+
+        Returns
+        -------
+        VoxelModel
+            A new VoxelModel instance with data selected within the bounding box.
+
+        """
+        sel = self.ds.rio.clip_box(*bbox, **rio_kwargs)
+        return self.__class__(sel)
+
     def select_like(self, other):
         other_y = other["y"]
         other_x = other["x"]

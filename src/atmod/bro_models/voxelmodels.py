@@ -64,6 +64,7 @@ class GeoTop(VoxelModel):
             ds = ds.load()
 
         ds = _follow_gdal_conventions(ds)
+        ds.rio.write_crs(28992, inplace=True)  # EPSG:28992
         return cls(ds)
 
     @classmethod
@@ -157,6 +158,7 @@ class Nl3d(VoxelModel):
             ds = ds.load()
 
         ds = _follow_gdal_conventions(ds)
+        ds.rio.write_crs(28992, inplace=True)
         return cls(ds)
 
     @classmethod

@@ -16,8 +16,9 @@ def dask_output_model_like(
         max_layers_soilmap = 9
         nz += max_layers_soilmap
 
-        extra_zcoords = np.arange(0, voxelmodel.dz * max_layers_soilmap, voxelmodel.dz)
-        extra_zcoords = extra_zcoords + np.max(out_zcoords) + voxelmodel.dz
+        _, _, dz = voxelmodel.resolution
+        extra_zcoords = np.arange(0, dz * max_layers_soilmap, dz)
+        extra_zcoords += voxelmodel.zmax + 0.5 * dz
 
         out_zcoords = np.append(out_zcoords, extra_zcoords)
 

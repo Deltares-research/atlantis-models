@@ -210,13 +210,13 @@ def divide_blocks(
 def find_overlapping_areas(ahn=None, geotop=None, nl3d=None, glg=None):
     bounds = []
     if ahn is not None:
-        bounds.append(ahn.bounds)
+        bounds.append(ahn.rio.bounds())
     if geotop is not None:
         bounds.append(geotop.bounds)
     if nl3d is not None:
         bounds.append(nl3d.bounds)
     if glg is not None:
-        bounds.append(glg.bounds)
+        bounds.append(glg.rio.bounds())
 
     bounds = np.array(bounds)
     overlapping_bounds = (
