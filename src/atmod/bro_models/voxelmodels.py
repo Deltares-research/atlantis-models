@@ -45,7 +45,6 @@ class GeoTop(VoxelModel):
         """
         cellsize = 100
         dz = 0.5
-        crs = 28992
 
         if lazy and "chunks" not in xr_kwargs:
             xr_kwargs["chunks"] = "auto"
@@ -65,7 +64,7 @@ class GeoTop(VoxelModel):
             ds = ds.load()
 
         ds = _follow_gdal_conventions(ds)
-        return cls(ds, cellsize, dz, crs)
+        return cls(ds)
 
     @classmethod
     def from_opendap(
@@ -139,7 +138,6 @@ class Nl3d(VoxelModel):
         """
         cellsize = 250
         dz = 1.0
-        crs = 28992
 
         if lazy and "chunks" not in xr_kwargs:
             xr_kwargs["chunks"] = "auto"
@@ -159,7 +157,7 @@ class Nl3d(VoxelModel):
             ds = ds.load()
 
         ds = _follow_gdal_conventions(ds)
-        return cls(ds, cellsize, dz, crs)
+        return cls(ds)
 
     @classmethod
     def from_opendap(

@@ -125,7 +125,7 @@ class Raster(XarrayMixin):
         resampling_method=Resampling.bilinear,
         inplace=False,
     ):
-        upscale_factor = self.cellsize / cellsize
+        upscale_factor = self.cellsize[0] / cellsize
         new_width = int(self.ncols * upscale_factor)
         new_height = int(self.nrows * upscale_factor)
 
@@ -134,9 +134,8 @@ class Raster(XarrayMixin):
         )
         if inplace:
             self.ds = ds_resampled
-            self.cellsize = cellsize
         else:
-            return self.__class__(ds_resampled, cellsize, self.crs)
+            return self.__class__(ds_resampled)
 
     def set_crs(self, crs: str | int | CRS):
         self.ds.rio.write_crs(crs, inplace=True)
