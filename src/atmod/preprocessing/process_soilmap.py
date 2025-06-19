@@ -69,7 +69,7 @@ def create_numba_mapping_dicts(soilmap, ascending_depth=True):
 
 def _get_values(series, ascending_depth=True):
     """
-    Helper function for get_numba_mapping_dicts_from.
+    Helper function for `create_numba_mapping_dicts`.
 
     """
     if ascending_depth:

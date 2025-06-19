@@ -5,7 +5,7 @@ import numpy as np
 import xarray as xr
 
 from atmod.base import VoxelModel
-from atmod.utils import _follow_gdal_conventions, get_crs_object
+from atmod.utils import _follow_gdal_conventions, coordinates_to_cellcenters
 
 ArrayLike = TypeVar("ArrayLike")
 
@@ -50,7 +50,7 @@ class GeoTop(VoxelModel):
             xr_kwargs["chunks"] = "auto"
 
         ds = xr.open_dataset(nc_path, **xr_kwargs)
-        ds = cls.coordinates_to_cellcenters(ds, cellsize, dz)
+        ds = coordinates_to_cellcenters(ds, cellsize, dz)
 
         if bbox is not None:
             xmin, ymin, xmax, ymax = bbox
@@ -144,7 +144,7 @@ class Nl3d(VoxelModel):
             xr_kwargs["chunks"] = "auto"
 
         ds = xr.open_dataset(nc_path, **xr_kwargs)
-        ds = cls.coordinates_to_cellcenters(ds, cellsize, dz)
+        ds = coordinates_to_cellcenters(ds, cellsize, dz)
 
         if bbox is not None:
             xmin, ymin, xmax, ymax = bbox
@@ -196,7 +196,7 @@ class Nl3d(VoxelModel):
             for var in lithok.data_vars:
                 ds[var] = lithok[var]
 
-        ds = cls.coordinates_to_cellcenters(ds, cellsize, dz)
+        ds = coordinates_to_cellcenters(ds, cellsize, dz)
 
         if bbox is not None:
             xmin, ymin, xmax, ymax = bbox

@@ -52,6 +52,29 @@ def create_connection(database: str | Path):
     return conn
 
 
+def set_cellsize(
+    da: xr.DataArray,
+    xsize: int | float,
+    ysize: int | float,
+    resampling_method=Resampling.bilinear,
+) -> xr.DataArray:
+    xres, yres = da.rio.resolution()
+    new_width = abs(int(da.rio.width * (xres / xsize)))
+    new_height = abs(int(da.rio.height * (yres / ysize)))
+
+    resampled = da.rio.reproject(
+        da.rio.crs, shape=(new_height, new_width), resampling=resampling_method
+    )
+    return resampled
+
+
+def coordinates_to_cellcenters(ds, cellsize, dz):
+    ds["x"] = ds["x"] + (cellsize / 2)
+    ds["y"] = ds["y"] + (cellsize / 2)
+    ds["z"] = ds["z"] + (dz / 2)
+    return ds
+
+
 def _follow_gdal_conventions(ds):
     if "z" in ds.dims:
         ds = ds.transpose("y", "x", "z")
@@ -240,19 +263,3 @@ def check_dims(func):
         return func(ds)
 
     return wrapper
-
-
-def set_cellsize(
-    da: xr.DataArray,
-    xsize: int | float,
-    ysize: int | float,
-    resampling_method=Resampling.bilinear,
-) -> xr.DataArray:
-    xres, yres = da.rio.resolution()
-    new_width = abs(int(da.rio.width * (xres / xsize)))
-    new_height = abs(int(da.rio.height * (yres / ysize)))
-
-    resampled = da.rio.reproject(
-        da.rio.crs, shape=(new_height, new_width), resampling=resampling_method
-    )
-    return resampled

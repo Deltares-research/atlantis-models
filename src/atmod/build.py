@@ -1,9 +1,8 @@
-from typing import TypeVar
-
 import numpy as np
 import xarray as xr
 
-from atmod.base import AtlansParameters, AtlansStrat, Mapping, VoxelModel
+from atmod.base import AtlansParameters, AtlansStrat, VoxelModel
+from atmod.bro_models import BroSoilmap
 from atmod.merge import combine_data_sources
 from atmod.preprocessing import (
     create_numba_mapping_dicts,
@@ -14,8 +13,6 @@ from atmod.preprocessing import (
 from atmod.templates import dask_output_model_like
 from atmod.utils import find_overlapping_areas
 from atmod.warnings import suppress_warnings
-
-BodemKaartDicts = TypeVar("BodemKaartDicts")
 
 
 @suppress_warnings(RuntimeWarning)
@@ -67,7 +64,7 @@ def build_atlantis_model(
     ahn: xr.DataArray,
     geotop: VoxelModel,  # TODO: Also make input for geotop optional
     nl3d: VoxelModel = None,
-    bodemkaart: Mapping = None,
+    bodemkaart: BroSoilmap = None,
     glg: xr.DataArray = None,
     parameters: AtlansParameters = None,
 ):
@@ -86,8 +83,8 @@ def build_atlantis_model(
         where the model is created for.
     geotop : VoxelModel
         VoxelModel instance with the GeoTOP 3D voxelmodel data. See atmod.bro_models.GeoTop.
-    bodemkaart : Mapping, optional
-        Mapping instance containing the BRO Bodemkaart data. See atmod.bro_models.BroBodemKaart.
+    bodemkaart : BroSoilmap, optional
+        BroSoilmap instance containing the BRO Bodemkaart data. See atmod.bro_models.BroBodemKaart.
         The default is None.
     glg : xr.DataArray, optional
         Optional DataArray instance with the GLG data to use for the phreatic level for the area
@@ -135,7 +132,7 @@ def build_model_in_chunks(
     ahn: xr.DataArray,
     geotop: VoxelModel,
     nl3d: VoxelModel,
-    bodemkaart: Mapping,
+    bodemkaart: BroSoilmap,
     glg: xr.DataArray = None,
     parameters: AtlansParameters = None,
     chunksize: int = 250,

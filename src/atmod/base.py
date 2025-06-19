@@ -4,13 +4,10 @@ from pathlib import Path
 from typing import Iterable
 
 import numpy as np
-import rasterio
-import rioxarray as rio
+import rioxarray as rio  # Make sure rioxarray accessor is available
 import xarray as xr
-from rasterio.crs import CRS
 from shapely.geometry import box
 
-from atmod.mixins import XarrayMixin
 from atmod.utils import sample_along_line
 
 type LineString = "LineString"
@@ -64,7 +61,7 @@ class AtlansStrat(IntEnum):
     older = 2
 
 
-class VoxelModel(XarrayMixin):
+class VoxelModel:
     def __init__(self, ds: xr.Dataset):
         required_dims = {"y", "x", "z"}
         if not required_dims.issubset(ds.dims):
@@ -171,10 +168,42 @@ class VoxelModel(XarrayMixin):
         self._zmax += 0.5 * self._dz
 
     @property
+    def coords(self) -> dict:
+        return self.ds.coords
+
+    @property
+    def dims(self) -> tuple:
+        return self.ds.dims
+
+    @property
+    def sizes(self) -> dict:
+        return self.ds.sizes
+
+    @property
+    def bounds(self) -> tuple:
+        return self.ds.rio.bounds()
+
+    @property
     def vertical_bounds(self) -> tuple[float, float]:
         if not hasattr(self, "_zmin"):
             self._get_internal_zbounds()
         return float(self._zmin), float(self._zmax)
+
+    @property
+    def xmin(self) -> float:
+        return self.bounds[0]
+
+    @property
+    def ymin(self) -> float:
+        return self.bounds[1]
+
+    @property
+    def xmax(self) -> float:
+        return self.bounds[2]
+
+    @property
+    def ymax(self) -> float:
+        return self.bounds[3]
 
     @property
     def zmin(self) -> float:
@@ -185,6 +214,10 @@ class VoxelModel(XarrayMixin):
         return self.vertical_bounds[1]
 
     @property
+    def cellsize(self) -> tuple:
+        return self.ds.rio.resolution()
+
+    @property
     def resolution(self) -> tuple[float, float, float]:
         """
         Return a tuple (dy, dx, dz) of the VoxelModel resolution.
@@ -193,6 +226,14 @@ class VoxelModel(XarrayMixin):
             self._get_internal_zbounds()
         dx, dy = np.abs(self.cellsize)
         return (float(dy), float(dx), float(self._dz))
+
+    @property
+    def nrows(self) -> int:
+        return self.ds.rio.height
+
+    @property
+    def ncols(self) -> int:
+        return self.ds.rio.width
 
     @property
     def shape(self) -> tuple:
@@ -206,12 +247,74 @@ class VoxelModel(XarrayMixin):
     def z_ascending(self):
         return self["z"][-1] > self["z"][0]
 
-    @staticmethod
-    def coordinates_to_cellcenters(ds, cellsize, dz):
-        ds["x"] = ds["x"] + (cellsize / 2)
-        ds["y"] = ds["y"] + (cellsize / 2)
-        ds["z"] = ds["z"] + (dz / 2)
-        return ds
+    @property
+    def crs(self):
+        return self.ds.rio.crs
+
+    @property
+    def dtype(self):
+        return self.ds.dtype
+
+    def get_affine(self):
+        """
+        Get the affine transformation of the dataset.
+
+        Returns
+        -------
+        Affine
+            Affine transformation of the dataset.
+
+        """
+        return self.ds.rio.transform()
+
+    def sel(self, **xr_kwargs):
+        """
+        Use Xarray selection functionality to select indices along specified dimensions.
+        This uses the ".sel" method of an Xarray Dataset.
+
+        Parameters
+        ----------
+        **xr_kwargs
+            xr.Dataset.sel keyword arguments. See relevant Xarray documentation.
+
+        Examples
+        --------
+        Select a specified coordinates or slice coordinates from the VoxelModel instance:
+
+        >>> selected = voxelmodel.sel(x=[1, 2, 3])  # Using keyword arguments
+        >>> selected = voxelmodel.sel({"x": [1, 2, 3]})  # Using a dictionary
+        >>> selected = voxelmodel.sel(x=slice(1, 4))  # Using a slice
+
+        Using additional options as well. For instance, when the desired coordinates do
+        not exactly match the VoxelModel coordinates, select the nearest:
+
+        >>> selected = voxelmodel.sel(x=[1.1, 2.5, 3.3], method="nearest")
+
+        """
+        selected = self.ds.sel(**xr_kwargs)
+        return self.__class__(selected)
+
+    def isel(self, **xr_kwargs):
+        """
+        Use Xarray selection functionality to select indices along specified dimensions.
+        This uses the ".isel" method of an Xarray Dataset.
+
+        Parameters
+        ----------
+        **xr_kwargs
+            xr.Dataset.isel keyword arguments. See relevant Xarray documentation.
+
+        Examples
+        --------
+        Select a specified coordinates or slice coordinates from the VoxelModel instance:
+
+        >>> selected = voxelmodel.isel(x=[1, 2, 3])  # Using keyword arguments
+        >>> selected = voxelmodel.isel({"x": [1, 2, 3]})  # Using a dictionary
+        >>> selected = voxelmodel.isel(x=slice(1, 4))  # Using a slice
+
+        """
+        selected = self.ds.isel(**xr_kwargs)
+        return self.__class__(selected)
 
     def drop_vars(self, data_vars: str | list, inplace: bool = False):
         if inplace:
@@ -355,32 +458,3 @@ class VoxelModel(XarrayMixin):
         return xr.DataArray(
             surface, coords={"y": self.ycoords, "x": self.xcoords}, dims=("y", "x")
         )
-
-
-class Mapping:
-    def __init__(self, gdf):
-        self.gdf = gdf
-
-    @property
-    def bounds(self):
-        return self.gdf.total_bounds
-
-    @property
-    def xmin(self):
-        return self.bounds[0]
-
-    @property
-    def xmax(self):
-        return self.bounds[2]
-
-    @property
-    def ymin(self):
-        return self.bounds[1]
-
-    @property
-    def ymax(self):
-        return self.bounds[3]
-
-    @property
-    def crs(self):
-        self.gdf.crs

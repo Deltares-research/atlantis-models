@@ -3130,7 +3130,7 @@ packages:
 - pypi: .\
   name: atlantis-models
   version: 0.1.0
-  sha256: 87eab1408760f61ede917db87e2701c7adb434d8c8b2de0943fcc25de6a565b5
+  sha256: c3f127b15059ed9c94742e3378379612cb96e3c9f0bbc56fad055e8847c515ef
   requires_dist:
   - dask
   - geopandas
