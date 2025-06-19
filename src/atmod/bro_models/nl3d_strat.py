@@ -1,32 +1,34 @@
-NL3D_STRAT = {
-    "Holocene eenheden": 1,
-    "Formatie van Boxtel": 2,
-    "Formatie van Kreftenheye": 3,
-    "Formaties van Eem en Woudenberg": 4,
-    "Formatie van Kreftenheye; Laagpakket van Zutphen": 5,
-    "Formatie van Beegden": 6,
-    "Formatie van Drente": 7,
-    "Gestuwde eenheden": 8,
-    "Formatie van Drachten": 9,
-    "Formatie van Urk; Laagpakket van Tynje": 10,
-    "Formatie van Peelo": 11,
-    "Formatie van Urk": 12,
-    "Formatie van Sterksel": 13,
-    "Formatie van Stramproy": 14,
-    "Formatie van Appelscha": 15,
-    "Formaties van Peize en Waalre": 16,
-    "Formatie van Maassluis": 17,
-    "Kiezelooliet Formatie": 18,
-    "Formatie van Oosterhout": 19,
-    "Formatie van Breda": 20,
-    "Formatie van Rupel": 21,
-    "Formatie van Tongeren": 22,
-    "Formatie van Dongen": 23,
-    "Formatie van Landen": 24,
-    "Formatie van Heyenrath": 25,
-    "Formatie van Houthem": 26,
-    "Formatie van Maastricht": 27,
-    "Formatie van Gulpen": 28,
-    "Formatie van Vaals": 29,
-    "Formatie van Aken": 30,
-}
+from geost.enums import UnitEnum
+
+
+class StratNl3d(UnitEnum):
+    HOLOCEEN = 1
+    BOXTEL = 2
+    KREFTENHEYE = 3
+    EEMWOUDENBERG = 4
+    ZUTPHEN = 5
+    BEEGDEN = 6
+    DRENTE = 7
+    GESTUWD = 8
+    DRACHTEN = 9
+    TYNJE = 10
+    PEELO = 11
+    URK = 12
+    STERKSEL = 13
+    STAMPROY = 14
+    APPELSCHA = 15
+    PEIZEWAALRE = 16
+    MAASSLUIS = 17
+    KIEZELOOLIET = 18
+    OOSTERHOUT = 19
+    BREDA = 20
+    RUPEL = 21
+    TONGEREN = 22
+    DONGEN = 23
+    LANDEN = 24
+    HEYENRATH = 25
+    HOUTHEM = 26
+    MAASTRICHT = 27
+    GULPEN = 28
+    VAALS = 29
+    AKEN = 30

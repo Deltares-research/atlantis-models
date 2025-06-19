@@ -1,20 +1,17 @@
 import numpy as np
+from geost.bro import StratGeotop
 
 from atmod.base import AtlansStrat
-from atmod.bro_models import GeoTop, Nl3d, StratGeoTop, StratNl3d
+from atmod.bro_models import GeoTop, Nl3d, StratNl3d
 
 
 def map_geotop_strat(geotop: GeoTop) -> GeoTop:
-    holocene_units = np.r_[
-        StratGeoTop.holocene.values,
-        StratGeoTop.channel_belts.values,
-        StratGeoTop.anthropogenic.values,
-    ]
+    is_holocene = geotop["strat"].isin(
+        np.r_[StratGeotop.holocene, StratGeotop.channel, StratGeotop.antropogenic]
+    )
 
-    is_holocene = geotop["strat"].isin(holocene_units)
-
-    new = np.where(geotop.isvalid & is_holocene, AtlansStrat.holocene, geotop["strat"])
-    new = np.where(geotop.isvalid & ~is_holocene, AtlansStrat.older, new)
+    new = np.where(geotop.isvalid & is_holocene, AtlansStrat.HOLOCENE, geotop["strat"])
+    new = np.where(geotop.isvalid & ~is_holocene, AtlansStrat.OLDER, new)
 
     geotop["strat"].values = new
 
@@ -22,12 +19,10 @@ def map_geotop_strat(geotop: GeoTop) -> GeoTop:
 
 
 def map_nl3d_strat(nl3d: Nl3d) -> Nl3d:
-    holocene = StratNl3d.units.select_units("Holocene eenheden").values
+    is_holocene = nl3d["strat"].isin(StratNl3d.HOLOCEEN)
 
-    is_holocene = nl3d["strat"].isin(holocene)
-
-    new = np.where(nl3d.isvalid & is_holocene, AtlansStrat.holocene, nl3d["strat"])
-    new = np.where(nl3d.isvalid & ~is_holocene, AtlansStrat.older, new)
+    new = np.where(nl3d.isvalid & is_holocene, AtlansStrat.HOLOCENE, nl3d["strat"])
+    new = np.where(nl3d.isvalid & ~is_holocene, AtlansStrat.OLDER, new)
 
     nl3d["strat"].values = new
 

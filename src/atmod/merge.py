@@ -1,9 +1,9 @@
 import numba
 import numpy as np
 import xarray as xr
+from geost.bro import Lithology
 
 from atmod.base import VoxelModel
-from atmod.bro_models.geology import Lithology
 from atmod.templates import get_full_like
 
 TYPEMIN_INT64 = np.iinfo(np.int64).min

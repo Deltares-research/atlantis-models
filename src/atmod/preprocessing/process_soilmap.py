@@ -3,8 +3,8 @@ from typing import NamedTuple
 import numba
 import numpy as np
 import pandas as pd
+from geost.bro import Lithology
 
-from atmod.bro_models import Lithology
 from atmod.warnings import suppress_warnings
 
 

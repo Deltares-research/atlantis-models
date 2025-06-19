@@ -25,7 +25,7 @@ def _calc_rho_bulk(voxelmodel, parameters):
 
 def calculate_domainbase(voxelmodel, parameters):
     thickness_holocene = np.nansum(
-        voxelmodel["thickness"].where(voxelmodel["geology"] == AtlansStrat.holocene),
+        voxelmodel["thickness"].where(voxelmodel["geology"] == AtlansStrat.HOLOCENE),
         axis=2,
     )
     surface_level_voxels = parameters.modelbase + np.nansum(

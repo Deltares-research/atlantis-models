@@ -57,8 +57,8 @@ class AtlansParameters:
 
 
 class AtlansStrat(IntEnum):
-    holocene = 1
-    older = 2
+    HOLOCENE = 1
+    OLDER = 2
 
 
 class VoxelModel:
