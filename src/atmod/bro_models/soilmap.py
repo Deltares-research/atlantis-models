@@ -1,15 +1,12 @@
+from enum import StrEnum
 from pathlib import Path
-from typing import NamedTuple, Union
 
 import geopandas as gpd
-import numpy as np
 import pandas as pd
-
-from atmod.base import Mapping
-from atmod.utils import create_connection
+from geost.io import Geopackage
 
 
-class BodemKaartLayers(NamedTuple):
+class SoilmapLayers(StrEnum):
     SOILAREA = "soilarea"
     AREAOFPEDOLOGICALINTEREST = "areaofpedologicalinterest"
     NGA_PROPERTIES = "nga_properties"
@@ -32,12 +29,7 @@ class BodemKaartLayers(NamedTuple):
     )
 
 
-class BodemKaartColumns(NamedTuple):
-    AREAID = "maparea_id"
-    PROFILEID = "normalsoilprofile_id"
-
-
-class BroBodemKaart(Mapping):
+class BroSoilmap:
     """
     Class to read and query available tables in the Geopackage of the BRO Bodemkaart.
 
@@ -47,54 +39,35 @@ class BroBodemKaart(Mapping):
     Parameters
     ----------
     gdf : gpd.GeoDataFrame
-        GeoDataFrame of the Bodemkaart with the spatial extent of the soilunits.
-    connection : sqlite3.Connection
-        Sqlite3 Connection object to the Bodemkaart Geopackage.
+        GeoDataFrame containing the spatial locations of the CPT data. The "find key" per
+        "bro_id" to each related tables in the Geopackage as index (index name: "fid").
+    db : :class:`~geost.io.Geopackage`
+        Geost Geopackage instance to handle the database connections and queries.
 
     Usage
     -----
     Easy instance of the BroBodemKaart with a working connection by using:
     >>> soilmap = BroBodemKaart.from_geopackage(path_to_geopackage)
 
+    Query a table in the soilmap geopackage:
+    >>> with soilmap.db:
+    ...     result = soilmap.db.query("SELECT * FROM soilarea")
+
     """
 
-    def __init__(self, gdf, connection=None):
-        Mapping.__init__(self, gdf)
-        self.connection = connection
-
-        ## tables
-        self.soilarea = BodemKaartLayers.SOILAREA
-        self.area_pedological_interest = BodemKaartLayers.AREAOFPEDOLOGICALINTEREST
-        self.nga_properties = BodemKaartLayers.NGA_PROPERTIES
-        self.soilmap = BodemKaartLayers.SOILMAP
-        self.normal_soilprofiles = BodemKaartLayers.NORMALSOILPROFILES
-        self.normal_soilprofiles_landuse = BodemKaartLayers.NORMALSOILPROFILES_LANDUSE
-        self.soilhorizon = BodemKaartLayers.SOILHORIZON
-        self.soilhorizon_fraction_particlesize = (
-            BodemKaartLayers.SOILHORIZON_FRACTIONPARTICLESIZE
-        )  # noqa: E501
-        self.soillayer = BodemKaartLayers.SOILLAYER
-        self.soil_units = BodemKaartLayers.SOIL_UNITS
-        self.soil_characteristics_bot = BodemKaartLayers.SOILCHARACTERISTICS_BOTTOMLAYER
-        self.soil_characteristics_top = BodemKaartLayers.SOILCHARACTERISTICS_TOPLAYER
-        self.soilarea_normal_soilprofile = BodemKaartLayers.SOILAREA_NORMALSOILPROFILE
-        self.soilarea_soilunit = BodemKaartLayers.SOILAREA_SOILUNIT
-        self.soilarea_soilunit_characteristics_top = (
-            BodemKaartLayers.SOILAREA_SOILUNIT_SOILCHARACTERISTICSTOPLAYER
-        )  # noqa: E501
-        self.soilarea_soilunit_characteristics_bot = (
-            BodemKaartLayers.SOILAREA_SOILUNIT_SOILCHARACTERISTICSBOTTOMLAYER
-        )  # noqa: E501
+    def __init__(self, gdf: gpd.GeoDataFrame, db: Geopackage = None):
+        self.gdf = gdf
+        self.db = db
 
     @classmethod
-    def from_geopackage(cls, gpkg_path: str | Path, **gpd_kwargs):
+    def from_geopackage(cls, file: str | Path, **gpd_kwargs):
         """
         Read the geopackage of the BRO Bodemkaart with a working sqlite3 connection
         to all the layers in the geopackage.
 
         Parameters
         ----------
-        gpkg_path : str | Path
+        file : str | Path
             Path to the geopackage.
         **gpd_kwargs
             See geopandas.read_file documentation.
@@ -104,96 +77,35 @@ class BroBodemKaart(Mapping):
         BroBodemKaart
             BroBodemKaart instance.
         """
-        gdf = gpd.read_file(gpkg_path, layer=BodemKaartLayers.SOILAREA, **gpd_kwargs)
-        conn = create_connection(gpkg_path)
-        return cls(gdf, conn)
+        if "fid_as_index" not in gpd_kwargs:  # Needs to retain index for db selections
+            gpd_kwargs["fid_as_index"] = True
 
-    def get_cursor(self):
-        return self.connection.cursor()
+        if "layer" in gpd_kwargs:
+            raise ValueError("Layer cannot be passed as a Geopandas keyword argument.")
 
-    def get_column_names(self, table: str) -> list:
-        """
-        Get the column names of a table in the BRO Bodemkaart geopackage.
+        gdf = gpd.read_file(file, layer=SoilmapLayers.SOILAREA, **gpd_kwargs)
+        db = Geopackage(file)
 
-        Parameters
-        ----------
-        table : string
-            Name of the table to get the column names for.
-
-        Returns
-        -------
-        columns : list
-            List of the column names for the table.
-
-        """
-        cursor = self.get_cursor()
-        cursor.execute(f"SELECT * FROM {table}")
-        columns = [col[0] for col in cursor.description]
-        return columns
-
-    def table_head(self, table: str) -> pd.DataFrame:
-        """
-        Select the first five records from a table the BRO Bodemkaart geopackage.
-
-        Parameters
-        ----------
-        table : string
-            Name of the table to select the first records from.
-
-        Returns
-        -------
-        pd.DataFrame
-            Pandas DataFrame of the first five records.
-
-        """
-        cursor = self.get_cursor()
-        cursor.execute(f"SELECT * FROM {table} LIMIT 5")
-        data = cursor.fetchall()
-        return pd.DataFrame(data, columns=self.get_column_names(table))
-
-    def query(self, query: str, outcolumns: list = None) -> pd.DataFrame:
-        """
-        Use a custom query on the BRO Bodemkaart geopackage to retrieve desired
-        tables.
-
-        Parameters
-        ----------
-        query : str
-            Full string of the SQL query to retrieve the desired table with.
-        outcolumns : list, optional
-            Specify column names to be used for the output table. The default is
-            None.
-
-        Returns
-        -------
-        pd.DataFrame
-            Result DataFrame of the query.
-
-        """
-        cursor = self.get_cursor()
-        cursor.execute(query)
-        data = cursor.fetchall()
-        return pd.DataFrame(data, columns=outcolumns)
+        return cls(gdf, db)
 
     def get_typical_soilprofiles(self) -> pd.DataFrame:
-        left_table = self.soilarea_normal_soilprofile
-        right_table = self.soilhorizon
+        query = f"""
+            SELECT
+                left.maparea_id,
+                right.normalsoilprofile_id,
+                right.lowervalue,
+                right.uppervalue,
+                right.layernumber,
+                right.faohorizonnotation,
+                right.organicmattercontent,
+                right.loamcontent,
+                right.lutitecontent,
+                right.sandmedian
+            FROM {SoilmapLayers.SOILHORIZON} AS right
+            JOIN {SoilmapLayers.SOILAREA_NORMALSOILPROFILE} AS left
+            ON left.normalsoilprofile_id = right.normalsoilprofile_id
+            """
+        with self.db:
+            soilprofiles = self.db.query(query)
 
-        map_id = BodemKaartColumns.AREAID
-        join_key = BodemKaartColumns.PROFILEID
-        left_join_key = f"{left_table}.{join_key}"
-        right_join_key = f"{right_table}.{join_key}"
-
-        query = (
-            f"SELECT {left_table}.{map_id}, {right_table}.* "
-            f"FROM {left_table} "
-            f"JOIN {right_table} ON {left_join_key}={right_join_key}"
-        )
-        cursor = self.get_cursor()
-        cursor.execute(query)
-        data = cursor.fetchall()
-
-        right_columns = self.get_column_names(right_table)
-        columns = [map_id] + right_columns
-
-        return pd.DataFrame(data, columns=columns)
+        return soilprofiles

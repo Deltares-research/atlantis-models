@@ -12,6 +12,7 @@ dependencies = [
 	"netcdf4",
 	"h5netcdf",
 	"numba",
+	"geost",
 ]
 description = "Build subsurface models for subsidence modelling with Atlantis"
 name = "atlantis-models"
@@ -66,7 +67,7 @@ build-docs = "sphinx-build -b html docs ./docs/build"
 rm-jupyter = "rm -r ./docs/jupyter_execute"
 rm-build = "rm -r ./docs/build"
 rm-generated = "rm -r ./docs/api_reference/generated"
-rebuild-docs = { depends-on = ["rm_jupyter", "rm_build", "rm_generated", "build_docs"] }
+rebuild-docs = { depends-on = ["rm-jupyter", "rm-build", "rm-generated", "build-docs"] }
 
 [tool.pixi.dependencies]
 python = ">=3.12"

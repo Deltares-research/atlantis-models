@@ -223,3 +223,37 @@ def get_bodemkaart_mapping_table(soilmap) -> pd.DataFrame:
     )
 
     return mapping_table
+
+
+def get_typical_soilprofiles(soilmap) -> pd.DataFrame:
+    """
+    Get the typical soilprofiles from the BRO Bodemkaart as a Pandas DataFrame.
+
+    Parameters
+    ----------
+    soilmap : atmod.bro_models.BroBodemKaart
+        Instance of the BRO bodemkaart from: https://www.broloket.nl/ondergrondmodellen.
+
+    Returns
+    -------
+    pd.DataFrame
+        DataFrame of the typical soilprofiles.
+
+    """
+    query = """
+        SELECT
+            left.maparea_id,
+            right.normalsoilprofile_id,
+            right.lowervalue,
+            right.uppervalue,
+            right.layernumber,
+            right.faohorizonnotation,
+            right.organicmattercontent,
+            right.loamcontent,
+            right.lutitecontent,
+            right.sandmedian
+        FROM soilhorizon AS right
+        JOIN soilarea_normalsoilprofile AS left
+        ON left.normalsoilprofile_id = right.normalsoilprofile_id
+    """
+    return
