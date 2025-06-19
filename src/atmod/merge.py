@@ -53,7 +53,7 @@ def combine_data_sources(
     voxelmodel["mass_fraction_organic"] = (("y", "x", "z"), organic)
     voxelmodel["surface_level"] = (ahn.dims, ahn.values)
 
-    voxelmodel.drop_vars(["strat", "lithok"], inplace=False)
+    voxelmodel.drop_vars(["strat", "lithok"], inplace=True)
     return voxelmodel
 
 

@@ -213,7 +213,7 @@ class VoxelModel(XarrayMixin):
         ds["z"] = ds["z"] + (dz / 2)
         return ds
 
-    def drop_vars(self, data_vars: str | list, inplace: bool = True):
+    def drop_vars(self, data_vars: str | list, inplace: bool = False):
         if inplace:
             self.ds = self.ds.drop_vars(data_vars)
         else:
