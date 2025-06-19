@@ -8,10 +8,9 @@ from rasterio import features
 from atmod.base import VoxelModel
 
 
-def soilmap_to_raster(soilmap, da):
-    gdf = soilmap.gdf
-    gdf["nr"] = gdf["maparea_id"].str.split(".", expand=True)[2].astype(int)
-    return rasterize_like(gdf, da, "nr", fill=np.iinfo(np.int64).min)
+def soilmap_to_raster(soilmap: gpd.GeoDataFrame, da: xr.DataArray):
+    soilmap["nr"] = soilmap["maparea_id"].str.split(".", expand=True)[2].astype(int)
+    return rasterize_like(soilmap, da, "nr", fill=np.iinfo(np.int64).min)
 
 
 def rasterize_like(

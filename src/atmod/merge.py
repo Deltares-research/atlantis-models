@@ -41,9 +41,7 @@ def combine_data_sources(
         lithoclass,
         mass_organic,
         soilmap_values,
-        soilmap_dicts.thickness,
-        soilmap_dicts.lithology,
-        soilmap_dicts.organic,
+        soilmap_dicts,
         voxelmodel.zmin,
     )
 
@@ -105,9 +103,7 @@ def combine_voxels_and_soilmap(
     lithology,
     organic,
     soilmap,
-    soilmap_thickness,
-    soilmap_lithology,
-    soilmap_organic,
+    soilprofiles,
     modelbase,
 ):
     ysize, xsize = ahn.shape
@@ -178,9 +174,9 @@ def combine_voxels_and_soilmap(
                     voxel_geology,
                     voxel_lithology,
                     voxel_organic,
-                    soilmap_thickness[soilnr].copy(),
-                    soilmap_lithology[soilnr].copy(),
-                    soilmap_organic[soilnr].copy(),
+                    soilprofiles.thickness[soilnr].copy(),
+                    soilprofiles.lithology[soilnr].copy(),
+                    soilprofiles.organic[soilnr].copy(),
                     surface,
                     modelbase,
                 )

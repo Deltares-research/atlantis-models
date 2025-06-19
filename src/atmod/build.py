@@ -6,7 +6,7 @@ import xarray as xr
 from atmod.base import AtlansParameters, AtlansStrat, Mapping, VoxelModel
 from atmod.merge import combine_data_sources
 from atmod.preprocessing import (
-    NumbaDicts,
+    create_numba_mapping_dicts,
     map_geotop_strat,
     map_nl3d_strat,
     soilmap_to_raster,
@@ -105,10 +105,10 @@ def build_atlantis_model(
 
     """  # noqa: E501
     if bodemkaart is not None:
-        soilmap_dicts = NumbaDicts.from_soilmap(bodemkaart)
-        soilmap = soilmap_to_raster(bodemkaart, ahn)
+        soilmap_dicts = create_numba_mapping_dicts(bodemkaart)
+        soilmap = soilmap_to_raster(bodemkaart.gdf, ahn)
     else:
-        soilmap_dicts = NumbaDicts.empty()
+        soilmap_dicts = None
         soilmap = None
 
     geotop = map_geotop_strat(geotop)
@@ -148,8 +148,8 @@ def build_model_in_chunks(
     overlapping_area = find_overlapping_areas(ahn, geotop, nl3d, glg)
     geotop = geotop.select_in_bbox(overlapping_area)
 
-    soilmap_dicts = NumbaDicts.from_soilmap(bodemkaart)
-    soilmap = soilmap_to_raster(bodemkaart, ahn)
+    soilmap_dicts = create_numba_mapping_dicts(bodemkaart)
+    soilmap = soilmap_to_raster(bodemkaart.gdf, ahn)
 
     model = dask_output_model_like(geotop, chunksize, True, True)
 
