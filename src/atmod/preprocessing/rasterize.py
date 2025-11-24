@@ -51,6 +51,7 @@ def rasterize_like(
     rasterized = features.rasterize(
         shapes=shapes,
         fill=np.nan,
+        dtype=np.float64,
         out_shape=(da.nrows, da.ncols),
         transform=da.get_affine(),
     )

@@ -62,7 +62,7 @@ class NumbaDicts:
 
         mapping_table = get_bodemkaart_mapping_table(soilmap)
         mapping_table["nr"] = (
-            mapping_table["nr"].str.split(".", expand=True)[2].astype(int)
+            mapping_table["nr"].str.split(".", expand=True).iloc[:, -1].astype(int)
         )
 
         to_fraction = 100
