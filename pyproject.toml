@@ -105,6 +105,7 @@ python = "3.14.*"
 default = { features = ["py314"], solve-group = "py314" }
 py312 = { features = ["py312"], solve-group = "py312" }
 py313 = { features = ["py313"], solve-group = "py313" }
+py314 = { features = ["py314"], solve-group = "py314" }
 
 [tool.pytest.ini_options]
 testpaths = [
