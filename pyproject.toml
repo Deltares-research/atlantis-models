@@ -12,6 +12,7 @@ dependencies = [
 	"netcdf4",
 	"h5netcdf",
 	"numba",
+	"pydap",
 ]
 description = "Build subsurface models for subsidence modelling with Atlantis"
 name = "atlantis-models"
@@ -86,6 +87,7 @@ pytest = "*"
 pytest-cov = "*"
 netcdf4 = "*"
 h5netcdf = "*"
+pydap = "*"
 numba = "*"
 ruff = "*"
 black = "*"

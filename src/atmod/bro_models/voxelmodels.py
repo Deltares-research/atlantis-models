@@ -101,7 +101,10 @@ class GeoTop(VoxelModel):
             GeoTop instance for the selected area.
 
         """
-        return cls.from_netcdf(url, data_vars, bbox, lazy, **xr_kwargs)
+        if "engine" in xr_kwargs:
+            raise ValueError("The engine argument is reserved for internal use.")
+
+        return cls.from_netcdf(url, data_vars, bbox, lazy, engine="pydap", **xr_kwargs)
 
 
 class Nl3d(VoxelModel):
